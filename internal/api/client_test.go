@@ -2,8 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -62,4 +65,63 @@ func TestClientUnauthorized(t *testing.T) {
 	if !IsUnauthorized(err) {
 		t.Errorf("error should be ErrUnauthorized, got %v", err)
 	}
+}
+
+func TestResponseError_Error(t *testing.T) {
+	err := &ResponseError{
+		StatusCode:  502,
+		ContentType: "text/html",
+		Body:        "<html>Bad Gateway</html>",
+		Message:     "服务端返回异常 (HTTP 502)，请检查 base_url 配置或稍后重试",
+	}
+
+	got := err.Error()
+	want := "服务端返回异常 (HTTP 502)，请检查 base_url 配置或稍后重试"
+	if got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+}
+
+func TestResponseError_Detail(t *testing.T) {
+	err := &ResponseError{
+		StatusCode:  502,
+		ContentType: "text/html",
+		Body:        "<html>Bad Gateway</html>",
+		Message:     "服务端返回异常 (HTTP 502)，请检查 base_url 配置或稍后重试",
+	}
+
+	detail := err.Detail()
+	if detail == "" {
+		t.Error("Detail() should not be empty")
+	}
+	// 验证包含关键调试信息
+	if !containsAll(detail, "502", "text/html", "Bad Gateway") {
+		t.Errorf("Detail() missing debug info: %s", detail)
+	}
+}
+
+func TestIsResponseError(t *testing.T) {
+	original := &ResponseError{
+		StatusCode: 502,
+		Message:    "test",
+	}
+	var wrapped error = fmt.Errorf("wrapped: %w", original)
+
+	var respErr *ResponseError
+	if !errors.As(wrapped, &respErr) {
+		t.Error("errors.As should match ResponseError")
+	}
+	if respErr.StatusCode != 502 {
+		t.Errorf("StatusCode = %d, want 502", respErr.StatusCode)
+	}
+}
+
+// containsAll 检查 s 是否包含所有子串
+func containsAll(s string, subs ...string) bool {
+	for _, sub := range subs {
+		if !strings.Contains(s, sub) {
+			return false
+		}
+	}
+	return true
 }

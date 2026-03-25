@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // ErrUnauthorized API Key 无效或过期
@@ -31,6 +32,23 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string {
 	return e.Message
+}
+
+// ResponseError 非预期响应错误（非 JSON、非 2xx 等）
+type ResponseError struct {
+	StatusCode  int
+	ContentType string
+	Body        string // 响应体前 512 字符
+	Message     string // 用户友好的错误信息
+}
+
+func (e *ResponseError) Error() string {
+	return e.Message
+}
+
+// Detail 返回包含调试信息的详细错误描述
+func (e *ResponseError) Detail() string {
+	return fmt.Sprintf("HTTP %d | Content-Type: %s\n响应体: %s", e.StatusCode, e.ContentType, e.Body)
 }
 
 // Client API 客户端
@@ -128,4 +146,23 @@ func GetValidationErrors(err error) map[string]interface{} {
 		return ve.Errors
 	}
 	return nil
+}
+
+// IsResponseError 检查是否是非预期响应错误
+func IsResponseError(err error) bool {
+	var re *ResponseError
+	return errors.As(err, &re)
+}
+
+// isJSONContentType 检查 Content-Type 是否包含 application/json
+func isJSONContentType(ct string) bool {
+	return strings.Contains(ct, "application/json")
+}
+
+// truncate 截断字符串到指定长度
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }
