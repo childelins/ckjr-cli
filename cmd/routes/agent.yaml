@@ -1,0 +1,76 @@
+resource: agent
+description: AI智能体的增删改查
+routes:
+  list:
+    method: POST
+    path: /admin/aiCreationCenter/listApp
+    description: 获取智能体列表
+    template:
+      page:
+        description: 页码
+        required: false
+        default: 1
+      limit:
+        description: 每页数量
+        required: false
+        default: 10
+      name:
+        description: 按名称搜索
+        required: false
+  get:
+    method: POST
+    path: /admin/aiCreationCenter/getAppInfo
+    description: 获取智能体详情
+    template:
+      aikbId:
+        description: 智能体ID
+        required: true
+  create:
+    method: POST
+    path: /admin/aiCreationCenter/createApp
+    description: 创建智能体
+    template:
+      name:
+        description: 智能体名称
+        required: true
+      avatar:
+        description: 头像URL
+        required: true
+      desc:
+        description: 描述
+        required: true
+      modelId:
+        description: 模型ID
+        required: false
+      botType:
+        description: 类型
+        required: false
+      isSaleOnly:
+        description: 1-交付型 0-工具型
+        required: false
+        default: 1
+  update:
+    method: POST
+    path: /admin/aiCreationCenter/modifyApp
+    description: 更新智能体
+    template:
+      aikbId:
+        description: 智能体ID
+        required: true
+      name:
+        description: 智能体名称
+        required: true
+      avatar:
+        description: 头像URL
+        required: true
+      desc:
+        description: 描述
+        required: true
+  delete:
+    method: POST
+    path: /admin/aiCreationCenter/deleteApp
+    description: 删除智能体
+    template:
+      aikbId:
+        description: 智能体ID
+        required: true
