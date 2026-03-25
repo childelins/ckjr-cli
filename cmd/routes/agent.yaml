@@ -1,5 +1,5 @@
 resource: agent
-description: AI智能体的增删改查
+description: AI智能体管理模块
 routes:
   list:
     method: POST
@@ -17,9 +17,17 @@ routes:
       name:
         description: 按名称搜索
         required: false
+      enablePagination:
+        description: 是否分页返回, 1-是 0-否
+        required: false
+        default: 0
+      platType:
+        description: 智能体类型, 0-全部 1-自营智能体 2-Coze智能体
+        required: false
+        default: 0
   get:
     method: POST
-    path: /admin/aiCreationCenter/getAppInfo
+    path: /admin/aiCreationCenter/describeApp
     description: 获取智能体详情
     template:
       aikbId:
@@ -39,16 +47,18 @@ routes:
       desc:
         description: 描述
         required: true
-      modelId:
-        description: 模型ID
-        required: false
       botType:
-        description: 类型
+        description: 智能体类型, 99-自营智能体 100-Coze智能体
         required: false
+        default: 99
       isSaleOnly:
-        description: 1-交付型 0-工具型
+        description: 是否支持售卖, 1-交付型 0-客服型
         required: false
         default: 1
+      promptType:
+        description: 提示词模板类型, 1-交付型 3-角色类/客服型
+        required: false
+        default: 3
   update:
     method: POST
     path: /admin/aiCreationCenter/modifyApp

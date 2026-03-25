@@ -104,3 +104,88 @@
 - 全部 29 个测试通过（-count=1）
 - 编译成功
 - --verbose flag 已在 help 输出中显示
+
+## 2026-03-25 Request Logging
+
+### Phase 18: logging 包 - requestId 生成与 context 透传
+- Status: complete (bba2c93)
+- 创建 internal/logging/logging.go
+- NewRequestID 生成 UUID v4（crypto/rand）
+- WithRequestID/RequestIDFrom context 透传
+- 4 个测试覆盖
+
+### Phase 19: logging 包 - Init 和 multiHandler
+- Status: complete (8ef281a)
+- 创建 internal/logging/multi_handler.go 实现 slog.Handler 接口
+- multiHandler 同时写入多个 handler
+- Init(verbose, baseDir) 创建日志目录和按日期滚动的 JSON 日志文件
+- verbose 模式通过 multiHandler 同时写文件和 stderr
+- 6 个新测试覆盖（3 multiHandler + 3 Init）
+
+### Phase 20: api.Client 新增 DoCtx 方法
+- Status: complete (1d5237c)
+- 新增 DoCtx(ctx, method, path, body, result) 方法
+- Do() 委托给 DoCtx(context.Background(), ...) 保持向后兼容
+- http.NewRequest 改为 http.NewRequestWithContext
+- 每次请求记录 api_request/api_response 结构化日志（request_id, method, url, status, duration_ms）
+- 所有错误路径均有 ERROR 级别日志
+- 4 个新测试覆盖
+
+### Phase 21: cmdgen 集成 - 生成 requestId 并调用 DoCtx
+- Status: complete (b3653b5)
+- buildSubCommand.Run 中生成 requestId 并构建 context
+- client.Do() 替换为 client.DoCtx(ctx, ...)
+- 1 个集成测试验证日志中出现 UUID v4 requestId
+
+### Phase 22: cmd/root.go 初始化日志 + 端到端验证
+- Status: complete (c0000c2)
+- cobra.OnInitialize 中调用 logging.Init
+- 日志文件写入 ~/.ckjr/logs/YYYY-MM-DD.log
+- 端到端验证：日志文件创建、结构化 JSON 格式、requestId 关联
+
+## 2026-03-25 ckjr-agent Skill 实现
+
+### Phase 23: 创建 Skill 文件
+- Status: complete
+- 创建 skills/ckjr-agent/SKILL.md
+- 包含 YAML frontmatter (name, description, triggers, allowed-tools)
+- 包含完整命令参考文档
+
+### Phase 24: 更新 README.md
+- Status: complete (abd06c3)
+- 在 README.md 末尾添加 Claude Code Skill 安装章节
+- 包含安装二进制、安装 Skill、使用示例
+
+## 2026-03-25 私有仓库安装分发方案
+
+### Phase 25: 创建 GitHub Actions Release 流水线
+- Status: complete
+- 创建 .github/workflows/release.yml
+- 支持 linux/darwin/windows 多平台构建
+- 支持 amd64/arm64 架构
+- 推送 tag 时自动触发 Release
+
+### Phase 26: 创建 install.sh 一键安装脚本
+- Status: complete
+- 创建 install.sh 并添加执行权限
+- 自动检测操作系统和架构
+- 支持 go install 和下载预编译二进制两种方式
+- 支持 PAT 和 SSH 认证
+- 自动配置 PATH 环境变量
+
+### Phase 27: 创建 Skills 安装说明
+- Status: complete
+- 创建 skills/ckjr-agent/README.md
+- 包含本地文件安装和远程 URL 安装两种方式
+- 包含使用说明和可用命令列表
+
+### Phase 28: 更新 README.md 添加私有仓库安装指南
+- Status: complete
+- 更新安装章节: 一键安装脚本、go install、源码构建
+- 添加 Fork 自定义说明
+- 更新 Skill 安装章节: 本地文件和远程 URL 两种方式
+
+### Phase 29: 提交变更
+- Status: complete (0836c05)
+- 全部测试通过 (39 个测试)
+- 提交 feat: add private repo install and distribution support
