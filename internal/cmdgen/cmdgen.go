@@ -2,6 +2,7 @@ package cmdgen
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -93,9 +94,10 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 			}
 
 			pretty, _ := cmd.Flags().GetBool("pretty")
+			verbose, _ := cmd.Flags().GetBool("verbose")
 			var result interface{}
 			if err := client.Do(route.Method, route.Path, input, &result); err != nil {
-				handleAPIError(err)
+				handleAPIError(err, verbose)
 				os.Exit(1)
 			}
 
@@ -143,17 +145,30 @@ func validateRequired(input map[string]interface{}, template map[string]router.F
 	return missing
 }
 
-func handleAPIError(err error) {
+func handleAPIError(err error, verbose bool) {
+	handleAPIErrorTo(os.Stderr, err, verbose)
+}
+
+func handleAPIErrorTo(w io.Writer, err error, verbose bool) {
 	if api.IsUnauthorized(err) {
-		output.PrintError(os.Stderr, "api_key 已过期，请重新登录获取")
+		output.PrintError(w, "api_key 已过期，请重新登录获取")
 		return
 	}
 
 	if api.IsValidationError(err) {
-		errors := api.GetValidationErrors(err)
-		output.PrintError(os.Stderr, fmt.Sprintf("参数校验失败: %v", errors))
+		errs := api.GetValidationErrors(err)
+		output.PrintError(w, fmt.Sprintf("参数校验失败: %v", errs))
 		return
 	}
 
-	output.PrintError(os.Stderr, err.Error())
+	var respErr *api.ResponseError
+	if errors.As(err, &respErr) {
+		output.PrintError(w, respErr.Error())
+		if verbose {
+			fmt.Fprintf(w, "  %s\n", respErr.Detail())
+		}
+		return
+	}
+
+	output.PrintError(w, err.Error())
 }

@@ -1,8 +1,11 @@
 package cmdgen
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
+	"github.com/childelins/ckjr-cli/internal/api"
 	"github.com/childelins/ckjr-cli/internal/router"
 )
 
@@ -86,5 +89,45 @@ func TestTemplateFlag(t *testing.T) {
 	templateFlag := createCmd.Flags().Lookup("template")
 	if templateFlag == nil {
 		t.Error("--template flag 未找到")
+	}
+}
+
+func TestHandleAPIError_ResponseError(t *testing.T) {
+	var buf bytes.Buffer
+	respErr := &api.ResponseError{
+		StatusCode:  502,
+		ContentType: "text/html",
+		Body:        "<html>Bad Gateway</html>",
+		Message:     "服务端返回异常 (HTTP 502)，请检查 base_url 配置或稍后重试",
+	}
+
+	handleAPIErrorTo(&buf, respErr, false)
+
+	got := buf.String()
+	if !strings.Contains(got, "服务端返回异常") {
+		t.Errorf("output should contain friendly message, got: %s", got)
+	}
+	if strings.Contains(got, "text/html") {
+		t.Error("non-verbose should not contain Content-Type")
+	}
+}
+
+func TestHandleAPIError_ResponseError_Verbose(t *testing.T) {
+	var buf bytes.Buffer
+	respErr := &api.ResponseError{
+		StatusCode:  502,
+		ContentType: "text/html",
+		Body:        "<html>Bad Gateway</html>",
+		Message:     "服务端返回异常 (HTTP 502)，请检查 base_url 配置或稍后重试",
+	}
+
+	handleAPIErrorTo(&buf, respErr, true)
+
+	got := buf.String()
+	if !strings.Contains(got, "服务端返回异常") {
+		t.Errorf("output should contain friendly message, got: %s", got)
+	}
+	if !strings.Contains(got, "502") || !strings.Contains(got, "text/html") {
+		t.Errorf("verbose should contain debug info, got: %s", got)
 	}
 }
