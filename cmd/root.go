@@ -38,6 +38,9 @@ func init() {
 	// 添加 --pretty 全局 flag
 	rootCmd.PersistentFlags().Bool("pretty", false, "格式化 JSON 输出")
 
+	// 添加 --verbose 全局 flag
+	rootCmd.PersistentFlags().Bool("verbose", false, "显示详细调试信息")
+
 	// 注册 config 命令
 	rootCmd.AddCommand(configCmd)
 

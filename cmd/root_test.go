@@ -114,3 +114,13 @@ func TestVersionIsSet(t *testing.T) {
 		t.Error("rootCmd.Version should not be empty")
 	}
 }
+
+func TestVerboseFlag(t *testing.T) {
+	f := rootCmd.PersistentFlags().Lookup("verbose")
+	if f == nil {
+		t.Fatal("--verbose flag 未注册")
+	}
+	if f.DefValue != "false" {
+		t.Errorf("默认值 = %s, want false", f.DefValue)
+	}
+}
