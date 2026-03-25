@@ -88,14 +88,18 @@ install_via_release() {
         error "curl or wget required"
     fi
 
-    # 确定归档文件名
+    # 确定归档文件名模式（带版本号）
+    local archive_pattern
     if [ "$os" = "windows" ]; then
-        archive_name="${BINARY_NAME}_${os}_${arch}.zip"
+        archive_pattern="${BINARY_NAME}_.*_${os}_${arch}\.zip"
     else
-        archive_name="${BINARY_NAME}_${os}_${arch}.tar.gz"
+        archive_pattern="${BINARY_NAME}_.*_${os}_${arch}\.tar\.gz"
     fi
 
-    download_url=$(echo "$release_info" | grep "browser_download_url" | grep "$archive_name" | head -n1 | cut -d'"' -f4)
+    download_url=$(echo "$release_info" | grep "browser_download_url" | grep -E "$archive_pattern" | head -n1 | cut -d'"' -f4)
+
+    # 从 URL 提取实际文件名
+    archive_name=$(basename "$download_url")
 
     if [ -z "$download_url" ]; then
         error "Binary not found for ${os}/${arch}. Please check releases: https://github.com/${REPO}/releases"
@@ -123,10 +127,20 @@ install_via_release() {
         tar -xzf "$archive_name"
     fi
 
-    # 安装
+    # 查找二进制文件（解压后的目录名包含版本号）
+    local binary_path=$(find . -name "$BINARY_NAME*" -type f | head -n1)
+    if [ -z "$binary_path" ]; then
+        error "Binary not found in archive"
+    fi
+
+    # 安装（Windows 保留 .exe 后缀）
     mkdir -p "$INSTALL_DIR"
-    mv "$BINARY_NAME" "$INSTALL_DIR/"
-    chmod +x "$INSTALL_DIR/$BINARY_NAME"
+    local dest_name="$BINARY_NAME"
+    if [ "$os" = "windows" ]; then
+        dest_name="$BINARY_NAME.exe"
+    fi
+    mv "$binary_path" "$INSTALL_DIR/$dest_name"
+    chmod +x "$INSTALL_DIR/$dest_name"
 
     # 配置 PATH
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
@@ -146,7 +160,7 @@ install_via_release() {
         fi
     fi
 
-    info "Installed to $INSTALL_DIR/$BINARY_NAME"
+    info "Installed to $INSTALL_DIR/$dest_name"
 }
 
 # 主函数
