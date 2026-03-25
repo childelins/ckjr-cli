@@ -79,23 +79,20 @@ routes:
     method: POST
     path: /admin/aiCreationCenter/listApp
     description: 获取智能体列表
-    style: flag
-    params:
-      page: { type: int, default: 1, description: "页码" }
-      limit: { type: int, default: 10, description: "每页数量" }
-      name: { type: string, description: "按名称搜索" }
+    template:
+      page: "(选填) 页码，默认1"
+      limit: "(选填) 每页数量，默认10"
+      name: "(选填) 按名称搜索"
   get:
     method: POST
     path: /admin/aiCreationCenter/getAppInfo
     description: 获取智能体详情
-    style: flag
-    params:
-      aikbId: { type: string, required: true, flag: "id", description: "智能体ID" }
+    template:
+      aikbId: "(必填) 智能体ID"
   create:
     method: POST
     path: /admin/aiCreationCenter/createApp
     description: 创建智能体
-    style: json
     template:
       name: "(必填) 智能体名称"
       avatar: "(必填) 头像URL"
@@ -107,7 +104,6 @@ routes:
     method: POST
     path: /admin/aiCreationCenter/modifyApp
     description: 更新智能体
-    style: json
     template:
       aikbId: "(必填) 智能体ID"
       name: "(必填) 智能体名称"
@@ -117,17 +113,20 @@ routes:
     method: POST
     path: /admin/aiCreationCenter/deleteApp
     description: 删除智能体
-    style: flag
-    params:
-      aikbId: { type: string, required: true, flag: "id", description: "智能体ID" }
+    template:
+      aikbId: "(必填) 智能体ID"
 ```
 
 ### 自动命令生成
 
-CLI 启动时扫描 `routes/*.yaml`，通过 `cmdgen.FromRoute()` 自动生成 cobra 子命令。cmdgen 根据 `style` 字段决定参数传入方式：
+CLI 启动时扫描 `routes/*.yaml`，通过 `cmdgen.FromRoute()` 自动生成 cobra 子命令。所有命令统一使用 JSON 位置参数传参：
 
-- `style: flag` — 从 `params` 生成 cobra flag，参数通过 `--flag value` 传入，发送为 JSON body
-- `style: json` — 接受一个 JSON 字符串作为位置参数，同时支持 stdin 输入（`echo '{}' | ckjr agent create -`）
+- 有参数时：`ckjr agent list '{"page":1}'`
+- 无参数时：`ckjr agent list`
+- stdin 输入：`echo '{"name":"xx"}' | ckjr agent create -`
+- 查看模板：`ckjr agent create --template`
+
+cmdgen 只有一套逻辑：读 JSON → 发 POST 请求 → 输出响应。
 
 新增模块只需：
 
@@ -138,22 +137,18 @@ CLI 启动时扫描 `routes/*.yaml`，通过 `cmdgen.FromRoute()` 自动生成 c
 
 ## 命令风格
 
-### flag 传参型（参数少）
+所有 API 命令统一使用 JSON 位置参数：
 
 ```bash
-ckjr agent list --page 1 --limit 10 --name "销售"
-ckjr agent get --id 123
-ckjr agent delete --id 123
-```
-
-### JSON 传参型（参数多）
-
-```bash
-# 位置参数
-ckjr agent create '{"name":"销售助手","avatar":"https://...","desc":"智能销售助手"}'
+ckjr agent list                                    # 无参数
+ckjr agent list '{"page":1,"limit":10}'            # 带条件
+ckjr agent get '{"aikbId":"123"}'                   # 查详情
+ckjr agent create '{"name":"xx","avatar":"url","desc":"描述"}'  # 创建
+ckjr agent update '{"aikbId":"123","name":"新名称"}'            # 更新
+ckjr agent delete '{"aikbId":"123"}'                # 删除
 
 # stdin（适合长 JSON 或避免 shell 转义）
-echo '{"name":"销售助手","avatar":"https://...","desc":"智能销售助手"}' | ckjr agent create -
+echo '{"name":"xx","avatar":"url","desc":"描述"}' | ckjr agent create -
 ```
 
 ### --template 自描述
@@ -172,7 +167,7 @@ template 数据从 YAML 路由配置中的 template 字段读取。
 1. 从 `~/.ckjr/config.json` 读取 base_url 和 api_key
 2. 拼接 base_url + YAML 中的 path
 3. 加 `Authorization: Bearer <api_key>` header
-4. 发起 HTTP 请求（flag 传参型和 JSON 传参型统一发送 JSON body，因为后端 API 全部使用 POST + JSON body）
+4. 发起 HTTP POST 请求，JSON 作为 request body（后端 API 全部使用 POST + JSON body）
 5. 解析 Dingo API 响应格式 `{"data": ..., "message": "...", "status_code": 200}`
 6. 成功时输出 data 部分 JSON，失败时输出错误信息
 
@@ -196,13 +191,14 @@ ckjr config set <key> <value>
 ckjr config show
 
 # 智能体
-ckjr agent list                     # 支持 --page --limit --name
-ckjr agent get --id <aikbId>
+ckjr agent list                          # 全量列表
+ckjr agent list '{"page":1,"limit":10}'  # 带条件
+ckjr agent get '{"aikbId":"123"}'
 ckjr agent create '<json>'
 ckjr agent create --template
 ckjr agent update '<json>'
 ckjr agent update --template
-ckjr agent delete --id <aikbId>
+ckjr agent delete '{"aikbId":"123"}'
 ```
 
 ## Claude Code Skill 集成
@@ -218,11 +214,11 @@ description: 管理公司 SaaS 平台的 AI 智能体
 
 ## 可用命令
 
-- ckjr agent list — 查看列表，支持 --page --limit --name
-- ckjr agent get --id <id> — 查看详情
+- ckjr agent list — 查看列表，用 --template 查看筛选参数
+- ckjr agent get '<json>' — 查看详情
 - ckjr agent create '<json>' — 创建，用 --template 查看参数
 - ckjr agent update '<json>' — 更新，用 --template 查看参数
-- ckjr agent delete --id <id> — 删除
+- ckjr agent delete '<json>' — 删除
 
 ## 使用规则
 
