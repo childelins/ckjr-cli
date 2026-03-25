@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "github.com/childelins/ckjr-cli/cmd"
 
 func main() {
-	fmt.Println("ckjr-cli")
+	cmd.Execute()
 }

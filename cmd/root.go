@@ -1,0 +1,94 @@
+package cmd
+
+import (
+	"embed"
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+
+	"github.com/childelins/ckjr-cli/internal/api"
+	"github.com/childelins/ckjr-cli/internal/cmdgen"
+	"github.com/childelins/ckjr-cli/internal/config"
+	"github.com/childelins/ckjr-cli/internal/router"
+)
+
+//go:embed routes
+var routesFS embed.FS
+
+var (
+	// 版本信息，通过 ldflags 注入
+	Version = "dev"
+)
+
+var rootCmd = &cobra.Command{
+	Use:     "ckjr",
+	Short:   "Claude Code 与公司 SaaS 平台的桥梁",
+	Version: Version,
+}
+
+// Execute 执行根命令
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func init() {
+	// 添加 --pretty 全局 flag
+	rootCmd.PersistentFlags().Bool("pretty", false, "格式化 JSON 输出")
+
+	// 注册 config 命令
+	rootCmd.AddCommand(configCmd)
+
+	// 注册动态生成的命令
+	registerRouteCommands()
+}
+
+func registerRouteCommands() {
+	// 读取 embed 的路由文件
+	entries, err := routesFS.ReadDir("routes")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "读取路由目录失败: %v\n", err)
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		// 只处理 .yaml 文件
+		name := entry.Name()
+		if len(name) < 5 || name[len(name)-5:] != ".yaml" {
+			continue
+		}
+
+		// 读取并解析路由配置
+		data, err := routesFS.ReadFile("routes/" + name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "读取路由文件 %s 失败: %v\n", name, err)
+			continue
+		}
+
+		cfg, err := router.Parse(data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "解析路由文件 %s 失败: %v\n", name, err)
+			continue
+		}
+
+		// 生成命令并注册
+		cmd := cmdgen.BuildCommand(cfg, createClient)
+		rootCmd.AddCommand(cmd)
+	}
+}
+
+// createClient 创建 API 客户端
+func createClient() (*api.Client, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("未找到配置文件，请先执行 ckjr config init")
+	}
+
+	return api.NewClient(cfg.BaseURL, cfg.APIKey), nil
+}
