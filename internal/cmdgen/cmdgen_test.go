@@ -2,6 +2,11 @@ package cmdgen
 
 import (
 	"bytes"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -109,6 +114,60 @@ func TestHandleAPIError_ResponseError(t *testing.T) {
 	}
 	if strings.Contains(got, "text/html") {
 		t.Error("non-verbose should not contain Content-Type")
+	}
+}
+
+func TestBuildSubCommand_GeneratesRequestID(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := api.Response{Data: map[string]string{"id": "1"}, Message: "ok", StatusCode: 200}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// 捕获日志输出
+	var logBuf bytes.Buffer
+	handler := slog.NewJSONHandler(&logBuf, nil)
+	old := slog.Default()
+	slog.SetDefault(slog.New(handler))
+	defer slog.SetDefault(old)
+
+	cfg := &router.RouteConfig{
+		Resource: "test",
+		Routes: map[string]router.Route{
+			"list": {
+				Method:      "POST",
+				Path:        "/test/list",
+				Description: "test list",
+			},
+		},
+	}
+
+	clientFactory := func() (*api.Client, error) {
+		return api.NewClient(server.URL, "test-key"), nil
+	}
+
+	cmd := BuildCommand(cfg, clientFactory)
+	cmd.PersistentFlags().Bool("pretty", false, "")
+	cmd.PersistentFlags().Bool("verbose", false, "")
+
+	listCmd, _, _ := cmd.Find([]string{"list"})
+	if listCmd == nil {
+		t.Fatal("list subcommand not found")
+	}
+
+	// 执行命令
+	cmd.SetArgs([]string{"list", "{}"})
+	cmd.Execute()
+
+	// 检查日志中包含 UUID v4 格式的 request_id
+	logOutput := logBuf.String()
+	uuidPattern := `[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`
+	if !regexp.MustCompile(uuidPattern).MatchString(logOutput) {
+		t.Errorf("log should contain UUID v4 request_id, got: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, "api_request") {
+		t.Errorf("log should contain api_request, got: %s", logOutput)
 	}
 }
 

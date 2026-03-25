@@ -1,6 +1,7 @@
 package cmdgen
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/childelins/ckjr-cli/internal/api"
+	"github.com/childelins/ckjr-cli/internal/logging"
 	"github.com/childelins/ckjr-cli/internal/output"
 	"github.com/childelins/ckjr-cli/internal/router"
 )
@@ -95,8 +97,14 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 
 			pretty, _ := cmd.Flags().GetBool("pretty")
 			verbose, _ := cmd.Flags().GetBool("verbose")
+
+			// 生成 requestId 并构建 context
+			ctx := context.Background()
+			requestID := logging.NewRequestID()
+			ctx = logging.WithRequestID(ctx, requestID)
+
 			var result interface{}
-			if err := client.Do(route.Method, route.Path, input, &result); err != nil {
+			if err := client.DoCtx(ctx, route.Method, route.Path, input, &result); err != nil {
 				handleAPIError(err, verbose)
 				os.Exit(1)
 			}
