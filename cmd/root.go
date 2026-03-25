@@ -4,12 +4,14 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/childelins/ckjr-cli/internal/api"
 	"github.com/childelins/ckjr-cli/internal/cmdgen"
 	"github.com/childelins/ckjr-cli/internal/config"
+	"github.com/childelins/ckjr-cli/internal/logging"
 	"github.com/childelins/ckjr-cli/internal/router"
 )
 
@@ -41,11 +43,27 @@ func init() {
 	// 添加 --verbose 全局 flag
 	rootCmd.PersistentFlags().Bool("verbose", false, "显示详细调试信息")
 
+	// 初始化日志系统
+	cobra.OnInitialize(initLogging)
+
 	// 注册 config 命令
 	rootCmd.AddCommand(configCmd)
 
 	// 注册动态生成的命令
 	registerRouteCommands()
+}
+
+func initLogging() {
+	verbose, _ := rootCmd.Flags().GetBool("verbose")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "获取用户目录失败: %v\n", err)
+		return
+	}
+	baseDir := filepath.Join(homeDir, ".ckjr")
+	if err := logging.Init(verbose, baseDir); err != nil {
+		fmt.Fprintf(os.Stderr, "日志初始化失败: %v\n", err)
+	}
 }
 
 func registerRouteCommands() {
