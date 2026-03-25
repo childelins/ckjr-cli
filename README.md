@@ -47,6 +47,14 @@ go install github.com/childelins/ckjr-cli@latest
 git clone git@github.com:childelins/ckjr-cli.git
 cd ckjr-cli
 go build -o ckjr .
+
+# 安装到 PATH
+mkdir -p ~/.local/bin
+mv ckjr ~/.local/bin/
+
+# 确保 ~/.local/bin 在 PATH 中
+echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bashrc  # 或 ~/.zshrc
+source ~/.bashrc  # 或 source ~/.zshrc
 ```
 
 ### Fork 自定义
