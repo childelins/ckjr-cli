@@ -1,13 +1,18 @@
 package api
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/childelins/ckjr-cli/internal/logging"
 )
 
 func TestClientDo(t *testing.T) {
@@ -210,6 +215,105 @@ func TestClientDo_EmptyContentType(t *testing.T) {
 	}
 	if result["key"] != "value" {
 		t.Errorf("result = %v, want key=value", result)
+	}
+}
+
+// captureLog 临时替换 slog 默认 logger，捕获日志输出
+func captureLog(fn func()) string {
+	var buf bytes.Buffer
+	handler := slog.NewJSONHandler(&buf, nil)
+	old := slog.Default()
+	slog.SetDefault(slog.New(handler))
+	defer slog.SetDefault(old)
+	fn()
+	return buf.String()
+}
+
+func TestDoCtx_LogsRequest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Response{Data: nil, Message: "ok", StatusCode: 200})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "test-req-123")
+
+	var result interface{}
+	output := captureLog(func() {
+		client.DoCtx(ctx, "GET", "/test", nil, &result)
+	})
+
+	if !strings.Contains(output, "test-req-123") {
+		t.Errorf("log should contain requestId, got: %s", output)
+	}
+	if !strings.Contains(output, "api_request") {
+		t.Errorf("log should contain api_request message, got: %s", output)
+	}
+	if !strings.Contains(output, "api_response") {
+		t.Errorf("log should contain api_response message, got: %s", output)
+	}
+}
+
+func TestDoCtx_LogsError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("<html>Bad Gateway</html>"))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "err-req-456")
+
+	var result interface{}
+	output := captureLog(func() {
+		client.DoCtx(ctx, "POST", "/fail", nil, &result)
+	})
+
+	if !strings.Contains(output, "err-req-456") {
+		t.Errorf("error log should contain requestId, got: %s", output)
+	}
+	if !strings.Contains(output, "ERROR") {
+		t.Errorf("error log should be ERROR level, got: %s", output)
+	}
+}
+
+func TestDoCtx_LogsDuration(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Response{Data: nil, Message: "ok", StatusCode: 200})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "dur-req-789")
+
+	var result interface{}
+	output := captureLog(func() {
+		client.DoCtx(ctx, "GET", "/test", nil, &result)
+	})
+
+	if !strings.Contains(output, "duration_ms") {
+		t.Errorf("log should contain duration_ms, got: %s", output)
+	}
+}
+
+func TestDo_BackwardCompatible(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Response{Data: map[string]string{"id": "1"}, Message: "ok", StatusCode: 200})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	var result map[string]string
+	err := client.Do("GET", "/test", nil, &result)
+	if err != nil {
+		t.Fatalf("Do() should still work, error = %v", err)
+	}
+	if result["id"] != "1" {
+		t.Errorf("Do() result = %v, want id=1", result)
 	}
 }
 

@@ -2,12 +2,17 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/childelins/ckjr-cli/internal/logging"
 )
 
 // ErrUnauthorized API Key 无效或过期
@@ -67,8 +72,24 @@ func NewClient(baseURL, apiKey string) *Client {
 	}
 }
 
-// Do 执行 API 请求
+// Do 执行 API 请求（向后兼容）
 func (c *Client) Do(method, path string, body interface{}, result interface{}) error {
+	return c.DoCtx(context.Background(), method, path, body, result)
+}
+
+// DoCtx 执行 API 请求（带 context，支持日志追踪）
+func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{}, result interface{}) error {
+	requestID := logging.RequestIDFrom(ctx)
+	url := c.baseURL + path
+
+	slog.InfoContext(ctx, "api_request",
+		"request_id", requestID,
+		"method", method,
+		"url", url,
+	)
+
+	start := time.Now()
+
 	var reqBody io.Reader
 	if body != nil {
 		data, err := json.Marshal(body)
@@ -78,8 +99,7 @@ func (c *Client) Do(method, path string, body interface{}, result interface{}) e
 		reqBody = bytes.NewReader(data)
 	}
 
-	url := c.baseURL + path
-	req, err := http.NewRequest(method, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
 		return fmt.Errorf("创建请求失败: %w", err)
 	}
@@ -89,13 +109,31 @@ func (c *Client) Do(method, path string, body interface{}, result interface{}) e
 
 	resp, err := c.http.Do(req)
 	if err != nil {
+		duration := time.Since(start)
+		slog.ErrorContext(ctx, "api_response",
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"duration_ms", duration.Milliseconds(),
+			"error", err.Error(),
+		)
 		return fmt.Errorf("请求失败: %w", err)
 	}
 	defer resp.Body.Close()
 
+	duration := time.Since(start)
+
 	// 读取响应体
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		slog.ErrorContext(ctx, "api_response",
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+			"error", err.Error(),
+		)
 		return fmt.Errorf("读取响应体失败: %w", err)
 	}
 
@@ -104,37 +142,79 @@ func (c *Client) Do(method, path string, body interface{}, result interface{}) e
 	// 1. 非 2xx 状态码 + 非 JSON -> ResponseError
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		if !isJSONContentType(contentType) {
-			return &ResponseError{
+			respErr := &ResponseError{
 				StatusCode:  resp.StatusCode,
 				ContentType: contentType,
 				Body:        truncate(string(bodyBytes), 512),
 				Message:     fmt.Sprintf("服务端返回异常 (HTTP %d)，请检查 base_url 配置或稍后重试", resp.StatusCode),
 			}
+			slog.ErrorContext(ctx, "api_response",
+				"request_id", requestID,
+				"method", method,
+				"url", url,
+				"status", resp.StatusCode,
+				"duration_ms", duration.Milliseconds(),
+				"error", respErr.Message,
+			)
+			return respErr
 		}
 	}
 
 	// 2. 2xx 但 Content-Type 非 JSON 且非空 -> ResponseError
 	if contentType != "" && !isJSONContentType(contentType) {
-		return &ResponseError{
+		respErr := &ResponseError{
 			StatusCode:  resp.StatusCode,
 			ContentType: contentType,
 			Body:        truncate(string(bodyBytes), 512),
 			Message:     "服务端返回非 JSON 响应，可能是 base_url 配置错误或需要重新认证",
 		}
+		slog.ErrorContext(ctx, "api_response",
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+			"error", respErr.Message,
+		)
+		return respErr
 	}
 
 	// 3. JSON 解码
 	var apiResp Response
 	if err := json.Unmarshal(bodyBytes, &apiResp); err != nil {
+		slog.ErrorContext(ctx, "api_response",
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+			"error", err.Error(),
+		)
 		return fmt.Errorf("解析响应失败: %w", err)
 	}
 
 	// 4. 业务错误处理
 	if resp.StatusCode == http.StatusUnauthorized {
+		slog.ErrorContext(ctx, "api_response",
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+			"error", "unauthorized",
+		)
 		return ErrUnauthorized
 	}
 
 	if resp.StatusCode == http.StatusUnprocessableEntity {
+		slog.ErrorContext(ctx, "api_response",
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+			"error", apiResp.Message,
+		)
 		return &ValidationError{
 			Message: apiResp.Message,
 			Errors:  apiResp.Errors,
@@ -142,10 +222,27 @@ func (c *Client) Do(method, path string, body interface{}, result interface{}) e
 	}
 
 	if resp.StatusCode >= 400 {
+		slog.ErrorContext(ctx, "api_response",
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+			"error", apiResp.Message,
+		)
 		return fmt.Errorf("API 错误 (%d): %s", resp.StatusCode, apiResp.Message)
 	}
 
-	// 5. 解析 data 到 result
+	// 5. 成功日志
+	slog.InfoContext(ctx, "api_response",
+		"request_id", requestID,
+		"method", method,
+		"url", url,
+		"status", resp.StatusCode,
+		"duration_ms", duration.Milliseconds(),
+	)
+
+	// 6. 解析 data 到 result
 	if result != nil && apiResp.Data != nil {
 		data, err := json.Marshal(apiResp.Data)
 		if err != nil {
