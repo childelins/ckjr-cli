@@ -80,41 +80,74 @@ routes:
     path: /admin/aiCreationCenter/listApp
     description: 获取智能体列表
     template:
-      page: "(选填) 页码，默认1"
-      limit: "(选填) 每页数量，默认10"
-      name: "(选填) 按名称搜索"
+      page:
+        description: 页码
+        required: false
+        default: 1
+      limit:
+        description: 每页数量
+        required: false
+        default: 10
+      name:
+        description: 按名称搜索
+        required: false
   get:
     method: POST
     path: /admin/aiCreationCenter/getAppInfo
     description: 获取智能体详情
     template:
-      aikbId: "(必填) 智能体ID"
+      aikbId:
+        description: 智能体ID
+        required: true
   create:
     method: POST
     path: /admin/aiCreationCenter/createApp
     description: 创建智能体
     template:
-      name: "(必填) 智能体名称"
-      avatar: "(必填) 头像URL"
-      desc: "(必填) 描述"
-      modelId: "(选填) 模型ID"
-      botType: "(选填) 类型"
-      isSaleOnly: "(选填) 1-交付型 0-工具型，默认1"
+      name:
+        description: 智能体名称
+        required: true
+      avatar:
+        description: 头像URL
+        required: true
+      desc:
+        description: 描述
+        required: true
+      modelId:
+        description: 模型ID
+        required: false
+      botType:
+        description: 类型
+        required: false
+      isSaleOnly:
+        description: 1-交付型 0-工具型
+        required: false
+        default: 1
   update:
     method: POST
     path: /admin/aiCreationCenter/modifyApp
     description: 更新智能体
     template:
-      aikbId: "(必填) 智能体ID"
-      name: "(必填) 智能体名称"
-      avatar: "(必填) 头像URL"
-      desc: "(必填) 描述"
+      aikbId:
+        description: 智能体ID
+        required: true
+      name:
+        description: 智能体名称
+        required: true
+      avatar:
+        description: 头像URL
+        required: true
+      desc:
+        description: 描述
+        required: true
   delete:
     method: POST
     path: /admin/aiCreationCenter/deleteApp
     description: 删除智能体
     template:
-      aikbId: "(必填) 智能体ID"
+      aikbId:
+        description: 智能体ID
+        required: true
 ```
 
 ### 自动命令生成
@@ -158,7 +191,18 @@ ckjr agent create --template
 # 输出 JSON 模板，AI 可据此构造参数
 ```
 
-template 数据从 YAML 路由配置中的 template 字段读取。
+template 使用结构化定义，支持以下字段：
+
+| 字段 | 说明 |
+|------|------|
+| description | 参数描述 |
+| required | 是否必填（true/false） |
+| default | 默认值（选填） |
+
+好处：
+- CLI 可在发请求前校验必填字段
+- AI 可获知默认值，不必每次询问
+- `--template` 输出格式统一、程序生成
 
 ## API Client
 
