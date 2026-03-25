@@ -21,6 +21,7 @@ func TestClientDo(t *testing.T) {
 		}
 
 		// 返回模拟响应
+		w.Header().Set("Content-Type", "application/json")
 		resp := Response{
 			Data:       map[string]string{"id": "123"},
 			Message:    "success",
@@ -45,6 +46,7 @@ func TestClientDo(t *testing.T) {
 
 func TestClientUnauthorized(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		resp := Response{
 			Message:    "Unauthorized",
@@ -113,6 +115,101 @@ func TestIsResponseError(t *testing.T) {
 	}
 	if respErr.StatusCode != 502 {
 		t.Errorf("StatusCode = %d, want 502", respErr.StatusCode)
+	}
+}
+
+func TestClientDo_HTMLResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("<html><body>Login Page</body></html>"))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	var result interface{}
+	err := client.Do("POST", "/test", nil, &result)
+	if err == nil {
+		t.Fatal("Do() should return error for HTML response")
+	}
+
+	var respErr *ResponseError
+	if !errors.As(err, &respErr) {
+		t.Fatalf("error should be ResponseError, got %T: %v", err, err)
+	}
+	if respErr.StatusCode != 200 {
+		t.Errorf("StatusCode = %d, want 200", respErr.StatusCode)
+	}
+	if respErr.ContentType != "text/html" {
+		t.Errorf("ContentType = %s, want text/html", respErr.ContentType)
+	}
+}
+
+func TestClientDo_Non2xxWithHTML(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("<html>Bad Gateway</html>"))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	var result interface{}
+	err := client.Do("POST", "/test", nil, &result)
+	if err == nil {
+		t.Fatal("Do() should return error for 502")
+	}
+
+	var respErr *ResponseError
+	if !errors.As(err, &respErr) {
+		t.Fatalf("error should be ResponseError, got %T: %v", err, err)
+	}
+	if respErr.StatusCode != 502 {
+		t.Errorf("StatusCode = %d, want 502", respErr.StatusCode)
+	}
+}
+
+func TestClientDo_Non2xxWithJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		resp := Response{Message: "internal error", StatusCode: 500}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	var result interface{}
+	err := client.Do("POST", "/test", nil, &result)
+	if err == nil {
+		t.Fatal("Do() should return error for 500")
+	}
+	// 500 + JSON 应走现有错误处理，不是 ResponseError
+	if IsResponseError(err) {
+		t.Error("500 with JSON should not be ResponseError")
+	}
+	if !strings.Contains(err.Error(), "internal error") {
+		t.Errorf("error should contain API message, got: %v", err)
+	}
+}
+
+func TestClientDo_EmptyContentType(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 清除 Content-Type，返回合法 JSON
+		w.Header()["Content-Type"] = nil
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"data":{"key":"value"},"message":"ok","status_code":200}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	var result map[string]string
+	err := client.Do("POST", "/test", nil, &result)
+	if err != nil {
+		t.Fatalf("Do() error = %v, empty Content-Type with valid JSON should succeed", err)
+	}
+	if result["key"] != "value" {
+		t.Errorf("result = %v, want key=value", result)
 	}
 }
 

@@ -93,12 +93,43 @@ func (c *Client) Do(method, path string, body interface{}, result interface{}) e
 	}
 	defer resp.Body.Close()
 
+	// 读取响应体
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("读取响应体失败: %w", err)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+
+	// 1. 非 2xx 状态码 + 非 JSON -> ResponseError
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if !isJSONContentType(contentType) {
+			return &ResponseError{
+				StatusCode:  resp.StatusCode,
+				ContentType: contentType,
+				Body:        truncate(string(bodyBytes), 512),
+				Message:     fmt.Sprintf("服务端返回异常 (HTTP %d)，请检查 base_url 配置或稍后重试", resp.StatusCode),
+			}
+		}
+	}
+
+	// 2. 2xx 但 Content-Type 非 JSON 且非空 -> ResponseError
+	if contentType != "" && !isJSONContentType(contentType) {
+		return &ResponseError{
+			StatusCode:  resp.StatusCode,
+			ContentType: contentType,
+			Body:        truncate(string(bodyBytes), 512),
+			Message:     "服务端返回非 JSON 响应，可能是 base_url 配置错误或需要重新认证",
+		}
+	}
+
+	// 3. JSON 解码
 	var apiResp Response
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+	if err := json.Unmarshal(bodyBytes, &apiResp); err != nil {
 		return fmt.Errorf("解析响应失败: %w", err)
 	}
 
-	// 处理错误状态
+	// 4. 业务错误处理
 	if resp.StatusCode == http.StatusUnauthorized {
 		return ErrUnauthorized
 	}
@@ -114,7 +145,7 @@ func (c *Client) Do(method, path string, body interface{}, result interface{}) e
 		return fmt.Errorf("API 错误 (%d): %s", resp.StatusCode, apiResp.Message)
 	}
 
-	// 解析 data 到 result
+	// 5. 解析 data 到 result
 	if result != nil && apiResp.Data != nil {
 		data, err := json.Marshal(apiResp.Data)
 		if err != nil {
