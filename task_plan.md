@@ -107,3 +107,61 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# API Client 错误处理改进 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-25-api-client-error-handling.md
+
+## 概述
+
+重构 `api.Client.Do()` 的响应处理流程，修复非 JSON 响应导致的不可读错误，增加 Content-Type 校验和 `--verbose` 调试模式。
+
+---
+
+## Phase 13: 新增 ResponseError 类型
+
+- **Source**: Plan → Task 1
+- **Status**: complete (3bf29bc)
+- **Description**: 在 api 包新增 ResponseError 类型，支持 Error()、Detail() 方法和 IsResponseError 辅助函数
+
+---
+
+## Phase 14: 重构 Do() 响应处理流程
+
+- **Source**: Plan → Task 2
+- **Status**: complete (41886b3)
+- **Description**: 重构 Do() 方法的响应处理顺序：先状态码、再 Content-Type、再 JSON 解码
+
+---
+
+## Phase 15: 添加 --verbose 全局 flag
+
+- **Source**: Plan → Task 3
+- **Status**: complete (c5ed6d3)
+- **Description**: 在 cmd/root.go 添加 --verbose PersistentFlag
+
+---
+
+## Phase 16: handleAPIError 增加 verbose 支持
+
+- **Source**: Plan → Task 4
+- **Status**: complete (54832c7)
+- **Description**: 重构 handleAPIError 函数，识别 ResponseError 并在 verbose 模式下输出调试信息
+
+---
+
+## Phase 17: 验收测试
+
+- **Source**: Plan → Task 5
+- **Status**: complete (final)
+- **Description**: 运行全部测试、编译验证、验证 --verbose flag 注册
+
+---
+
+## 遇到的错误 (API 错误处理)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
