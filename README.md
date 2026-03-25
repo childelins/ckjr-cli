@@ -6,9 +6,60 @@
 
 ## 安装
 
+### 方式 1: 一键安装脚本(推荐)
+
+适用于无 Go 环境的用户:
+
 ```bash
+# 设置 GitHub Token(私有仓库需要)
+export GITHUB_TOKEN=ghp_xxx
+
+# 执行安装脚本
+curl -fsSL https://raw.githubusercontent.com/childelins/ckjr-cli/main/install.sh | bash
+```
+
+安装脚本会自动:
+- 检测操作系统和架构
+- 下载对应的预编译二进制
+- 配置 PATH 环境变量
+
+### 方式 2: go install (Go 开发者)
+
+适用于有 Go 环境的开发者:
+
+```bash
+# 配置私有仓库访问
+export GOPRIVATE=github.com/childelins/*
+
+# 使用 SSH(推荐)
+git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+# 或使用 PAT
+# git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+# 安装
+go install github.com/childelins/ckjr-cli@latest
+```
+
+### 方式 3: 从源码构建
+
+```bash
+git clone git@github.com:childelins/ckjr-cli.git
+cd ckjr-cli
 go build -o ckjr .
 ```
+
+### Fork 自定义
+
+如果 Fork 了此仓库,安装时需要:
+
+1. 修改 `install.sh` 中的 `REPO` 变量为你的仓库地址
+2. 推送 tag 触发 Release:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+3. 使用你的仓库地址执行安装脚本
 
 ## 快速开始
 
@@ -162,23 +213,29 @@ go test ./... -v
 
 ## Claude Code Skill 安装
 
-如果你使用 Claude Code，可以安装 ckjr-agent skill 来通过自然语言操作智能体。
-
-### 安装二进制
-
-```bash
-go install github.com/childelins/ckjr-cli@latest
-```
+如果你使用 Claude Code,可以安装 ckjr-agent skill 来通过自然语言操作智能体。
 
 ### 安装 Skill
 
+**方式 1: 本地文件(推荐)**
+
 ```bash
+git clone git@github.com:childelins/ckjr-cli.git
+claude skills add ./ckjr-cli/skills/ckjr-agent
+```
+
+**方式 2: 远程 URL (需 PAT)**
+
+```bash
+export GITHUB_TOKEN=ghp_xxx
 claude skills add https://github.com/childelins/ckjr-cli --skill ckjr-agent
 ```
 
+详细说明见 [skills/ckjr-agent/README.md](skills/ckjr-agent/README.md)。
+
 ### 使用
 
-在 Claude Code 对话中直接描述需求，如：
+在 Claude Code 对话中直接描述需求:
 
 - "帮我创建一个销售助手智能体"
 - "查看所有智能体列表"
