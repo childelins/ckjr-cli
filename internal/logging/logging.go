@@ -4,6 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 type ctxKey struct{}
@@ -29,4 +33,31 @@ func RequestIDFrom(ctx context.Context) string {
 		return id
 	}
 	return ""
+}
+
+// Init 初始化日志系统
+// baseDir 为日志根目录（生产环境传 ~/.ckjr，测试传 t.TempDir()）
+// verbose=true 时额外输出到 stderr
+func Init(verbose bool, baseDir string) error {
+	logDir := filepath.Join(baseDir, "logs")
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return fmt.Errorf("创建日志目录失败: %w", err)
+	}
+
+	filename := filepath.Join(logDir, time.Now().Format("2006-01-02")+".log")
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("打开日志文件失败: %w", err)
+	}
+
+	fileHandler := slog.NewJSONHandler(file, &slog.HandlerOptions{Level: slog.LevelInfo})
+
+	if verbose {
+		stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})
+		slog.SetDefault(slog.New(newMultiHandler(fileHandler, stderrHandler)))
+	} else {
+		slog.SetDefault(slog.New(fileHandler))
+	}
+
+	return nil
 }

@@ -2,8 +2,12 @@ package logging
 
 import (
 	"context"
+	"log/slog"
+	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
+	"time"
 )
 
 func TestNewRequestID_Format(t *testing.T) {
@@ -42,5 +46,54 @@ func TestRequestIDFrom_Empty(t *testing.T) {
 	got := RequestIDFrom(ctx)
 	if got != "" {
 		t.Errorf("RequestIDFrom() = %q, want empty", got)
+	}
+}
+
+func TestInit_CreatesLogDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := Init(false, tmpDir)
+	if err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	logDir := filepath.Join(tmpDir, "logs")
+	if _, err := os.Stat(logDir); os.IsNotExist(err) {
+		t.Error("Init() should create logs directory")
+	}
+}
+
+func TestInit_CreatesLogFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := Init(false, tmpDir)
+	if err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	today := time.Now().Format("2006-01-02")
+	logFile := filepath.Join(tmpDir, "logs", today+".log")
+
+	// 写一条日志触发文件创建
+	slog.Info("test")
+
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		t.Errorf("Init() should create log file %s", logFile)
+	}
+}
+
+func TestInit_VerboseMode(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := Init(true, tmpDir)
+	if err != nil {
+		t.Fatalf("Init(verbose=true) error = %v", err)
+	}
+
+	// 验证日志文件被创建
+	today := time.Now().Format("2006-01-02")
+	logFile := filepath.Join(tmpDir, "logs", today+".log")
+
+	slog.Info("verbose test")
+
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		t.Errorf("Init(verbose) should still create log file %s", logFile)
 	}
 }
