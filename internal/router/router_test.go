@@ -52,6 +52,55 @@ routes:
 	}
 }
 
+func TestParseRouteConfig_TypeAndExample(t *testing.T) {
+	yamlContent := `
+resource: test
+description: 测试模块
+routes:
+  create:
+    method: POST
+    path: /create
+    description: 创建
+    template:
+      count:
+        description: 数量
+        required: false
+        default: 10
+        type: int
+        example: "10"
+      name:
+        description: 名称
+        required: true
+`
+	cfg, err := Parse([]byte(yamlContent))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	route, ok := cfg.Routes["create"]
+	if !ok {
+		t.Fatal("create route not found")
+	}
+
+	// 有 type/example 的字段
+	countField := route.Template["count"]
+	if countField.Type != "int" {
+		t.Errorf("count.Type = %q, want \"int\"", countField.Type)
+	}
+	if countField.Example != "10" {
+		t.Errorf("count.Example = %q, want \"10\"", countField.Example)
+	}
+
+	// 未设置 type/example 的字段，应为零值
+	nameField := route.Template["name"]
+	if nameField.Type != "" {
+		t.Errorf("name.Type = %q, want \"\"", nameField.Type)
+	}
+	if nameField.Example != "" {
+		t.Errorf("name.Example = %q, want \"\"", nameField.Example)
+	}
+}
+
 func TestGetTemplate(t *testing.T) {
 	cfg := &RouteConfig{
 		Resource: "agent",

@@ -11,6 +11,8 @@ type Field struct {
 	Description string      `yaml:"description"`
 	Required    bool        `yaml:"required"`
 	Default     interface{} `yaml:"default"`
+	Type        string      `yaml:"type"`
+	Example     string      `yaml:"example"`
 }
 
 // Route 定义单个路由
