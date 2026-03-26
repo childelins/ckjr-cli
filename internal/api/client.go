@@ -109,12 +109,15 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 		reqBody = bytes.NewReader(data)
 	}
 
-	slog.InfoContext(ctx, "api_request",
+	attrs := []interface{}{
 		"request_id", requestID,
 		"method", method,
 		"url", url,
-		"request_body", string(data),
-	)
+	}
+	if logging.IsDev() {
+		attrs = append(attrs, "request_body", string(data))
+	}
+	slog.InfoContext(ctx, "api_request", attrs...)
 
 	start := time.Now()
 
@@ -167,15 +170,18 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 				Body:        truncate(string(bodyBytes), 512),
 				Message:     fmt.Sprintf("服务端返回异常 (HTTP %d)，请检查 base_url 配置或稍后重试", resp.StatusCode),
 			}
-			slog.ErrorContext(ctx, "api_response",
+			errAttrs := []interface{}{
 				"request_id", requestID,
 				"method", method,
 				"url", url,
 				"status", resp.StatusCode,
 				"duration_ms", duration.Milliseconds(),
 				"error", respErr.Message,
-				"response_body", readableJSON(bodyBytes),
-			)
+			}
+			if logging.IsDev() {
+				errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
+			}
+			slog.ErrorContext(ctx, "api_response", errAttrs...)
 			return respErr
 		}
 	}
@@ -188,57 +194,69 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 			Body:        truncate(string(bodyBytes), 512),
 			Message:     "服务端返回非 JSON 响应，可能是 base_url 配置错误或需要重新认证",
 		}
-		slog.ErrorContext(ctx, "api_response",
+		errAttrs := []interface{}{
 			"request_id", requestID,
 			"method", method,
 			"url", url,
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", respErr.Message,
-			"response_body", readableJSON(bodyBytes),
-		)
+		}
+		if logging.IsDev() {
+			errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
+		}
+		slog.ErrorContext(ctx, "api_response", errAttrs...)
 		return respErr
 	}
 
 	// 3. JSON 解码
 	var apiResp Response
 	if err := json.Unmarshal(bodyBytes, &apiResp); err != nil {
-		slog.ErrorContext(ctx, "api_response",
+		errAttrs := []interface{}{
 			"request_id", requestID,
 			"method", method,
 			"url", url,
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", err.Error(),
-			"response_body", readableJSON(bodyBytes),
-		)
+		}
+		if logging.IsDev() {
+			errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
+		}
+		slog.ErrorContext(ctx, "api_response", errAttrs...)
 		return fmt.Errorf("解析响应失败: %w", err)
 	}
 
 	// 4. 业务错误处理
 	if resp.StatusCode == http.StatusUnauthorized {
-		slog.ErrorContext(ctx, "api_response",
+		errAttrs := []interface{}{
 			"request_id", requestID,
 			"method", method,
 			"url", url,
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", "unauthorized",
-			"response_body", readableJSON(bodyBytes),
-		)
+		}
+		if logging.IsDev() {
+			errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
+		}
+		slog.ErrorContext(ctx, "api_response", errAttrs...)
 		return ErrUnauthorized
 	}
 
 	if resp.StatusCode == http.StatusUnprocessableEntity {
-		slog.ErrorContext(ctx, "api_response",
+		errAttrs := []interface{}{
 			"request_id", requestID,
 			"method", method,
 			"url", url,
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", apiResp.Message,
-			"response_body", readableJSON(bodyBytes),
-		)
+		}
+		if logging.IsDev() {
+			errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
+		}
+		slog.ErrorContext(ctx, "api_response", errAttrs...)
 		return &ValidationError{
 			Message: apiResp.Message,
 			Errors:  apiResp.Errors,
@@ -246,27 +264,33 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 	}
 
 	if resp.StatusCode >= 400 {
-		slog.ErrorContext(ctx, "api_response",
+		errAttrs := []interface{}{
 			"request_id", requestID,
 			"method", method,
 			"url", url,
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", apiResp.Message,
-			"response_body", readableJSON(bodyBytes),
-		)
+		}
+		if logging.IsDev() {
+			errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
+		}
+		slog.ErrorContext(ctx, "api_response", errAttrs...)
 		return fmt.Errorf("API 错误 (%d): %s", resp.StatusCode, apiResp.Message)
 	}
 
 	// 5. 成功日志
-	slog.InfoContext(ctx, "api_response",
+	respAttrs := []interface{}{
 		"request_id", requestID,
 		"method", method,
 		"url", url,
 		"status", resp.StatusCode,
 		"duration_ms", duration.Milliseconds(),
-		"response_body", readableJSON(bodyBytes),
-	)
+	}
+	if logging.IsDev() {
+		respAttrs = append(respAttrs, "response_body", readableJSON(bodyBytes))
+	}
+	slog.InfoContext(ctx, "api_response", respAttrs...)
 
 	// 6. 解析 data 到 result
 	if result != nil && apiResp.Data != nil {

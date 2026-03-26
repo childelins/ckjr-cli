@@ -68,7 +68,7 @@ func initLogging() {
 		return
 	}
 	baseDir := filepath.Join(homeDir, ".ckjr")
-	if err := logging.Init(verbose, baseDir); err != nil {
+	if err := logging.Init(verbose, baseDir, logging.Production); err != nil {
 		fmt.Fprintf(os.Stderr, "日志初始化失败: %v\n", err)
 	}
 }

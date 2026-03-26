@@ -329,6 +329,10 @@ func TestDoCtx_LogsRequestBody(t *testing.T) {
 
 	var result interface{}
 	body := map[string]interface{}{"name": "test", "page": 1}
+	tmpDir := t.TempDir()
+	if err := logging.Init(false, tmpDir, logging.Development); err != nil {
+		t.Fatalf("logging.Init: %v", err)
+	}
 	output := captureLog(func() {
 		client.DoCtx(ctx, "POST", "/test", body, &result)
 	})
@@ -356,6 +360,10 @@ func TestDoCtx_LogsResponseBody(t *testing.T) {
 	ctx := logging.WithRequestID(context.Background(), "resp-body-001")
 
 	var result map[string]string
+	tmpDir := t.TempDir()
+	if err := logging.Init(false, tmpDir, logging.Development); err != nil {
+		t.Fatalf("logging.Init: %v", err)
+	}
 	output := captureLog(func() {
 		client.DoCtx(ctx, "GET", "/test", nil, &result)
 	})
@@ -384,6 +392,10 @@ func TestDoCtx_LogsResponseBody_OnError(t *testing.T) {
 	ctx := logging.WithRequestID(context.Background(), "err-resp-001")
 
 	var result interface{}
+	tmpDir := t.TempDir()
+	if err := logging.Init(false, tmpDir, logging.Development); err != nil {
+		t.Fatalf("logging.Init: %v", err)
+	}
 	output := captureLog(func() {
 		client.DoCtx(ctx, "POST", "/test", map[string]string{"x": "y"}, &result)
 	})
@@ -407,6 +419,10 @@ func TestDoCtx_NilBody_LogsEmptyRequestBody(t *testing.T) {
 	ctx := logging.WithRequestID(context.Background(), "nil-body-001")
 
 	var result interface{}
+	tmpDir := t.TempDir()
+	if err := logging.Init(false, tmpDir, logging.Development); err != nil {
+		t.Fatalf("logging.Init: %v", err)
+	}
 	output := captureLog(func() {
 		client.DoCtx(ctx, "GET", "/test", nil, &result)
 	})
@@ -466,6 +482,10 @@ func TestDoCtx_LogsChinese_Readable(t *testing.T) {
 	ctx := logging.WithRequestID(context.Background(), "chinese-001")
 
 	var result map[string]string
+	tmpDir := t.TempDir()
+	if err := logging.Init(false, tmpDir, logging.Development); err != nil {
+		t.Fatalf("logging.Init: %v", err)
+	}
 	output := captureLog(func() {
 		client.DoCtx(ctx, "GET", "/test", nil, &result)
 	})
@@ -475,6 +495,39 @@ func TestDoCtx_LogsChinese_Readable(t *testing.T) {
 	}
 	if strings.Contains(output, `\u5c0f`) {
 		t.Errorf("log should NOT contain unicode escapes, got: %s", output)
+	}
+}
+
+func TestDoCtx_ProdOmitsBody(t *testing.T) {
+	// 设置 Production 环境
+	tmpDir := t.TempDir()
+	if err := logging.Init(false, tmpDir, logging.Production); err != nil {
+		t.Fatalf("logging.Init: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Response{
+			Data:       map[string]string{"id": "42"},
+			Message:    "ok",
+			StatusCode: 200,
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "prod-omit-001")
+
+	var result map[string]string
+	output := captureLog(func() {
+		client.DoCtx(ctx, "POST", "/test", map[string]string{"name": "test"}, &result)
+	})
+
+	if strings.Contains(output, "request_body") {
+		t.Errorf("prod mode should NOT contain request_body, got: %s", output)
+	}
+	if strings.Contains(output, "response_body") {
+		t.Errorf("prod mode should NOT contain response_body, got: %s", output)
 	}
 }
 
