@@ -142,3 +142,16 @@ func TestVerboseFlag(t *testing.T) {
 		t.Errorf("默认值 = %s, want false", f.DefValue)
 	}
 }
+
+func TestDefaultVersion(t *testing.T) {
+	// 未调用 SetVersion 时，version 应为默认值 "dev"
+	if version != "dev" {
+		t.Errorf("default version = %s, want dev", version)
+	}
+}
+
+func TestDefaultEnvironment(t *testing.T) {
+	if environment != "production" {
+		t.Errorf("default environment = %s, want production", environment)
+	}
+}
