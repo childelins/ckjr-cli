@@ -1,4 +1,4 @@
-resource: agent
+name: agent
 description: AI智能体管理
 routes:
     create:
