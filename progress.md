@@ -248,3 +248,23 @@
 
 ### Phase 40: 最终验证
 - Status: pending (需手动执行)
+
+## 2026-03-26 Request Body 日志 & Route 命令隐藏
+
+### Phase 49: DoCtx 增加 request_body 日志
+- Status: complete (pending commit)
+- 将 json.Marshal(body) 提前到 api_request 日志之前执行
+- api_request 日志新增 request_body 字段
+- nil body 时输出空字符串（string(nil) == ""）
+- 新增 TestDoCtx_LogsRequestBody、TestDoCtx_NilBody_LogsEmptyRequestBody 测试
+
+### Phase 50: DoCtx 增加 response_body 日志
+- Status: complete (pending commit)
+- 在 7 个 api_response 日志点增加 response_body 字段
+- 排除网络错误（无响应体）和读取失败（无响应体）两个日志点
+- 新增 TestDoCtx_LogsResponseBody、TestDoCtx_LogsResponseBody_OnError 测试
+
+### Phase 51: 隐藏 route 命令
+- Status: complete (pending commit)
+- 在 routeCmd 定义中设置 Hidden: true
+- 新增 TestRouteCmd_IsHidden 测试

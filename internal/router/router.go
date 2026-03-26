@@ -10,16 +10,16 @@ import (
 type Field struct {
 	Description string      `yaml:"description"`
 	Required    bool        `yaml:"required"`
-	Default     interface{} `yaml:"default"`
-	Type        string      `yaml:"type"`
-	Example     string      `yaml:"example"`
+	Default     interface{} `yaml:"default,omitempty"`
+	Type        string      `yaml:"type,omitempty"`
+	Example     string      `yaml:"example,omitempty"`
 }
 
 // Route 定义单个路由
 type Route struct {
-	Method      string          `yaml:"method"`
-	Path        string          `yaml:"path"`
-	Description string          `yaml:"description"`
+	Method      string           `yaml:"method"`
+	Path        string           `yaml:"path"`
+	Description string           `yaml:"description,omitempty"`
 	Template    map[string]Field `yaml:"template"`
 }
 

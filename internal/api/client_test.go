@@ -317,6 +317,167 @@ func TestDo_BackwardCompatible(t *testing.T) {
 	}
 }
 
+func TestDoCtx_LogsRequestBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Response{Data: nil, Message: "ok", StatusCode: 200})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "body-req-001")
+
+	var result interface{}
+	body := map[string]interface{}{"name": "test", "page": 1}
+	output := captureLog(func() {
+		client.DoCtx(ctx, "POST", "/test", body, &result)
+	})
+
+	if !strings.Contains(output, "request_body") {
+		t.Errorf("log should contain request_body field, got: %s", output)
+	}
+	if !strings.Contains(output, "name") || !strings.Contains(output, "test") {
+		t.Errorf("log should contain request body content, got: %s", output)
+	}
+}
+
+func TestDoCtx_LogsResponseBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Response{
+			Data:       map[string]string{"id": "42"},
+			Message:    "ok",
+			StatusCode: 200,
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "resp-body-001")
+
+	var result map[string]string
+	output := captureLog(func() {
+		client.DoCtx(ctx, "GET", "/test", nil, &result)
+	})
+
+	if !strings.Contains(output, "response_body") {
+		t.Errorf("log should contain response_body field, got: %s", output)
+	}
+	if !strings.Contains(output, "id") || !strings.Contains(output, "42") {
+		t.Errorf("log should contain response body content, got: %s", output)
+	}
+}
+
+func TestDoCtx_LogsResponseBody_OnError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(Response{
+			Message:    "validation failed",
+			StatusCode: 422,
+			Errors:     map[string]interface{}{"name": "required"},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "err-resp-001")
+
+	var result interface{}
+	output := captureLog(func() {
+		client.DoCtx(ctx, "POST", "/test", map[string]string{"x": "y"}, &result)
+	})
+
+	if !strings.Contains(output, "response_body") {
+		t.Errorf("error log should contain response_body field, got: %s", output)
+	}
+	if !strings.Contains(output, "validation failed") {
+		t.Errorf("error log should contain response body content, got: %s", output)
+	}
+}
+
+func TestDoCtx_NilBody_LogsEmptyRequestBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Response{Data: nil, Message: "ok", StatusCode: 200})
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "nil-body-001")
+
+	var result interface{}
+	output := captureLog(func() {
+		client.DoCtx(ctx, "GET", "/test", nil, &result)
+	})
+
+	if !strings.Contains(output, "request_body") {
+		t.Errorf("log should contain request_body field even for nil body, got: %s", output)
+	}
+}
+
+func TestReadableJSON(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []byte
+		want  string // 期望包含的子串
+	}{
+		{
+			name:  "unicode escapes decoded to UTF-8",
+			input: []byte(`{"name":"\u5c0f\u5c0f\u753b\u624b"}`),
+			want:  "小小画手",
+		},
+		{
+			name:  "mixed unicode escapes and ASCII",
+			input: []byte(`{"msg":"\u4f60\u597d world"}`),
+			want:  "你好 world",
+		},
+		{
+			name:  "already UTF-8 stays unchanged",
+			input: []byte(`{"name":"小小画手"}`),
+			want:  "小小画手",
+		},
+		{
+			name:  "invalid JSON returns raw string",
+			input: []byte(`not json`),
+			want:  "not json",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := readableJSON(tt.input)
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("readableJSON() = %s, want to contain %s", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDoCtx_LogsChinese_Readable(t *testing.T) {
+	// 模拟 PHP 服务端返回 Unicode 转义的 JSON
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// 手动写入包含 Unicode 转义的 JSON（模拟 PHP json_encode 行为）
+		w.Write([]byte(`{"statusCode":200,"data":{"name":"\u5c0f\u5c0f\u753b\u624b"}}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	ctx := logging.WithRequestID(context.Background(), "chinese-001")
+
+	var result map[string]string
+	output := captureLog(func() {
+		client.DoCtx(ctx, "GET", "/test", nil, &result)
+	})
+
+	if !strings.Contains(output, "小小画手") {
+		t.Errorf("log should contain readable Chinese, got: %s", output)
+	}
+	if strings.Contains(output, `\u5c0f`) {
+		t.Errorf("log should NOT contain unicode escapes, got: %s", output)
+	}
+}
+
 // containsAll 检查 s 是否包含所有子串
 func containsAll(s string, subs ...string) bool {
 	for _, sub := range subs {

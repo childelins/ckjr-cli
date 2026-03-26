@@ -24,9 +24,10 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "ckjr-cli",
-	Short:   "创客匠人 CLI - 知识付费 SaaS 系统的命令行工具",
-	Version: Version,
+	Use:               "ckjr-cli",
+	Short:             "创客匠人 CLI - 知识付费 SaaS 系统的命令行工具",
+	Version:           Version,
+	CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 }
 
 // Execute 执行根命令
@@ -48,6 +49,9 @@ func init() {
 
 	// 注册 config 命令
 	rootCmd.AddCommand(configCmd)
+
+	// 注册 route 命令
+	rootCmd.AddCommand(routeCmd)
 
 	// 注册动态生成的命令
 	registerRouteCommands()

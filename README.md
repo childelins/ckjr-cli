@@ -213,7 +213,7 @@ go test ./... -v
 
 ## Claude Code Skill 安装
 
-如果你使用 Claude Code,可以安装 ckjr-agent skill 来通过自然语言操作智能体。
+如果你使用 Claude Code,可以安装 ckjr-cli skill 来通过自然语言操作智能体。
 
 ### 安装 Skill
 
@@ -222,13 +222,13 @@ git clone git@github.com:childelins/ckjr-cli.git
 cd ckjr-cli
 
 # 复制到 skills 目录
-cp -r skills/ckjr-agent ~/.claude/skills/
+cp -r skills/ckjr-cli ~/.claude/skills/
 
 # 或使用符号链接（方便跟随仓库更新）
-# ln -s "$(pwd)/skills/ckjr-agent" ~/.claude/skills/ckjr-agent
+# ln -s "$(pwd)/skills/ckjr-cli" ~/.claude/skills/ckjr-cli
 ```
 
-详细说明见 [skills/ckjr-agent/README.md](skills/ckjr-agent/README.md)。
+详细说明见 [skills/ckjr-cli/README.md](skills/ckjr-cli/README.md)。
 
 ### 使用
 

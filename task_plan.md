@@ -463,3 +463,163 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# curl-to-yaml 实现 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-curl-to-yaml.md
+
+## 概述
+
+实现 `ckjr-cli route import` 命令，从 curl 命令自动生成 YAML 路由配置。新增 curlparse 解析器、yamlgen 生成器、route import CLI 命令。
+
+---
+
+## Phase 41: curlparse - curl 命令解析器
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (pending commit)
+- **Description**: 创建 internal/curlparse 包，实现 Parse 函数解析 curl 命令提取 method/path/fields，支持类型推断
+
+---
+
+## Phase 42: yamlgen - YAML 路由生成器
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (pending commit)
+- **Description**: 创建 internal/yamlgen 包，实现 GenerateRoute/AppendToFile/CreateFile，生成符合现有 agent.yaml 格式的 YAML 配置
+
+---
+
+## Phase 43: route import CLI 命令
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (pending commit)
+- **Description**: 创建 cmd/route.go 实现 route import 子命令，支持 stdin 管道和 --curl 参数输入，支持追加和新建 YAML 文件
+
+---
+
+## Phase 44: 全量测试验证
+
+- **Source**: Plan -> Task 4
+- **Status**: pending
+- **Description**: 运行全量测试、手动验证 curl 示例端到端流程
+
+---
+
+## 遇到的错误 (curl-to-yaml)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
+
+---
+---
+
+# Field omitempty 修复 - 任务计划
+
+> Source: 用户直接指定修复方案
+
+## 概述
+
+修复 YAML Marshal 时 Field 结构体的 Default/Type/Example 字段输出 `default: null`、`type: ""` 等冗余空值，添加 omitempty yaml tag。
+
+---
+
+## Phase 45: Field 结构体 yaml tag 添加 omitempty
+
+- **Source**: 用户指定
+- **Status**: in_progress
+- **Description**: 给 internal/router/router.go 中 Field 的 Default、Type、Example 字段添加 omitempty yaml tag，运行全量测试确认无回归，不提交
+
+---
+
+## 遇到的错误 (Field omitempty)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
+
+---
+---
+
+# Skill 自发现改造 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-skill-self-discovery.md
+
+## 概述
+
+将 ckjr-agent skill 从硬编码命令列表改造为薄层自发现模式，新增模块时 skill 零修改。
+
+---
+
+## Phase 46: 替换 SKILL.md 为薄层自发现内容
+
+- **Source**: Plan -> Task 1
+- **Status**: in_progress
+- **Description**: 用薄层自发现内容完整替换 skills/ckjr-agent/SKILL.md，移除所有硬编码命令列表，改为三层发现流程描述
+
+---
+
+## Phase 47: 更新 README.md
+
+- **Source**: Plan -> Task 2
+- **Status**: pending
+- **Description**: 用简化内容替换 skills/ckjr-agent/README.md，移除硬编码命令表格，强调多平台兼容
+
+---
+
+## Phase 48: 端到端验证
+
+- **Source**: Plan -> Task 3
+- **Status**: pending
+- **Description**: 验证 CLI 自发现流程正常，确认 SKILL.md 不含硬编码命令
+
+---
+
+## 遇到的错误 (Skill 自发现改造)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
+
+---
+---
+
+# Request Body 日志 & Route 命令隐藏 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-request-body-logging-and-route-hidden.md
+
+## 概述
+
+在 HTTP 请求日志中增加 request body 和 response body 字段，并将 route 命令从 --help 中隐藏。
+
+---
+
+## Phase 49: DoCtx 增加 request_body 日志
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (pending commit)
+- **Description**: 将 json.Marshal(body) 提前到 api_request 日志之前执行，在日志中增加 request_body 字段。TDD 方式实现。
+
+---
+
+## Phase 50: DoCtx 增加 response_body 日志
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (pending commit)
+- **Description**: 在所有 api_response 日志点增加 response_body 字段（排除网络错误和读取失败两个日志点）。TDD 方式实现。
+
+---
+
+## Phase 51: 隐藏 route 命令
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (pending commit)
+- **Description**: 在 cmd/route.go 的 routeCmd 中设置 Hidden: true，使 route 不出现在 --help 输出中。TDD 方式实现。
+
+---
+
+## 遇到的错误 (Request Body 日志 & Route 隐藏)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|

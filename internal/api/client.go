@@ -15,6 +15,21 @@ import (
 	"github.com/childelins/ckjr-cli/internal/logging"
 )
 
+// readableJSON 将 JSON 中的 Unicode 转义序列解码为 UTF-8 字符
+func readableJSON(raw []byte) string {
+	var v interface{}
+	if json.Unmarshal(raw, &v) != nil {
+		return string(raw)
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if enc.Encode(v) != nil {
+		return string(raw)
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
+}
+
 // ErrUnauthorized API Key 无效或过期
 var ErrUnauthorized = errors.New("api_key 已过期，请重新登录获取")
 
@@ -82,22 +97,26 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 	requestID := logging.RequestIDFrom(ctx)
 	url := c.baseURL + path
 
-	slog.InfoContext(ctx, "api_request",
-		"request_id", requestID,
-		"method", method,
-		"url", url,
-	)
-
-	start := time.Now()
-
+	// body 序列化提前，使 data 在日志时可用
+	var data []byte
 	var reqBody io.Reader
 	if body != nil {
-		data, err := json.Marshal(body)
+		var err error
+		data, err = json.Marshal(body)
 		if err != nil {
 			return fmt.Errorf("序列化请求体失败: %w", err)
 		}
 		reqBody = bytes.NewReader(data)
 	}
+
+	slog.InfoContext(ctx, "api_request",
+		"request_id", requestID,
+		"method", method,
+		"url", url,
+		"request_body", string(data),
+	)
+
+	start := time.Now()
 
 	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
@@ -155,6 +174,7 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 				"status", resp.StatusCode,
 				"duration_ms", duration.Milliseconds(),
 				"error", respErr.Message,
+				"response_body", readableJSON(bodyBytes),
 			)
 			return respErr
 		}
@@ -175,6 +195,7 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", respErr.Message,
+			"response_body", readableJSON(bodyBytes),
 		)
 		return respErr
 	}
@@ -189,6 +210,7 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", err.Error(),
+			"response_body", readableJSON(bodyBytes),
 		)
 		return fmt.Errorf("解析响应失败: %w", err)
 	}
@@ -202,6 +224,7 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", "unauthorized",
+			"response_body", readableJSON(bodyBytes),
 		)
 		return ErrUnauthorized
 	}
@@ -214,6 +237,7 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", apiResp.Message,
+			"response_body", readableJSON(bodyBytes),
 		)
 		return &ValidationError{
 			Message: apiResp.Message,
@@ -229,6 +253,7 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 			"status", resp.StatusCode,
 			"duration_ms", duration.Milliseconds(),
 			"error", apiResp.Message,
+			"response_body", readableJSON(bodyBytes),
 		)
 		return fmt.Errorf("API 错误 (%d): %s", resp.StatusCode, apiResp.Message)
 	}
@@ -240,6 +265,7 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 		"url", url,
 		"status", resp.StatusCode,
 		"duration_ms", duration.Milliseconds(),
+		"response_body", readableJSON(bodyBytes),
 	)
 
 	// 6. 解析 data 到 result
