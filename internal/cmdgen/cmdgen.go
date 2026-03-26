@@ -22,12 +22,12 @@ type APIClientFactory func() (*api.Client, error)
 // BuildCommand 从路由配置构建 cobra 命令
 func BuildCommand(cfg *router.RouteConfig, clientFactory APIClientFactory) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   cfg.Resource,
+		Use:   cfg.Name,
 		Short: cfg.Description,
 	}
 
 	for name, route := range cfg.Routes {
-		subCmd := buildSubCommand(cfg.Resource, name, route, clientFactory)
+		subCmd := buildSubCommand(cfg.Name, name, route, clientFactory)
 		cmd.AddCommand(subCmd)
 	}
 
