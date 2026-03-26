@@ -74,10 +74,29 @@ func runImport(curlStr, file, routeName, nameDesc string) error {
 		return yamlgen.AppendToFile(file, routeName, route)
 	}
 
+	// 新建文件：从文件路径推导 name (resource 名称)
+	name := inferNameFromPath(file)
 	if nameDesc == "" {
 		return fmt.Errorf("新建文件需要通过 --name-desc 指定资源描述")
 	}
-	return yamlgen.CreateFile(file, routeName, nameDesc, routeName, route)
+	return yamlgen.CreateFile(file, name, nameDesc, routeName, route)
+}
+
+// inferNameFromPath 从文件路径推导 name (resource 名称)
+func inferNameFromPath(path string) string {
+	// 取文件名（不含扩展名）
+	parts := splitPath(path)
+	if len(parts) == 0 {
+		return "unknown"
+	}
+	filename := parts[len(parts)-1]
+	// 去掉 .yaml 扩展名
+	for i := range filename {
+		if i > 0 && filename[i-1] == '.' {
+			return filename[:i-1]
+		}
+	}
+	return filename
 }
 
 // inferRouteName 从 URL path 末段推导 route name

@@ -18,7 +18,7 @@ func TestRouteImport_Stdin_AppendToExisting(t *testing.T) {
 	dir := t.TempDir()
 	yamlPath := filepath.Join(dir, "agent.yaml")
 
-	initial := `resource: agent
+	initial := `name: agent
 description: AI智能体管理
 routes:
     list:
@@ -30,7 +30,7 @@ routes:
 
 	curl := `curl 'https://kpapi-cs.ckjr001.com/api/admin/aiCreationCenter/modifyApp' -H 'content-type: application/json' --data-raw '{"name":"test","aikbId":3550}'`
 
-	err := runImport(curl, yamlPath, "update", "", "")
+	err := runImport(curl, yamlPath, "update", "")
 	if err != nil {
 		t.Fatalf("runImport() error = %v", err)
 	}
@@ -58,7 +58,7 @@ func TestRouteImport_CreateNewFile(t *testing.T) {
 
 	curl := `curl 'https://example.com/api/admin/order/list' --data-raw '{"page":1,"limit":10}'`
 
-	err := runImport(curl, yamlPath, "list", "order", "订单管理")
+	err := runImport(curl, yamlPath, "list", "订单管理")
 	if err != nil {
 		t.Fatalf("runImport() error = %v", err)
 	}
@@ -68,8 +68,8 @@ func TestRouteImport_CreateNewFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
 	}
-	if cfg.Resource != "order" {
-		t.Errorf("Resource = %q", cfg.Resource)
+	if cfg.Name != "order" {
+		t.Errorf("Name = %q", cfg.Name)
 	}
 	if _, ok := cfg.Routes["list"]; !ok {
 		t.Error("list route not found")

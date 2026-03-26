@@ -6,7 +6,7 @@ import (
 
 func TestParseRouteConfig(t *testing.T) {
 	yamlContent := `
-resource: agent
+name: agent
 description: AI智能体的增删改查
 routes:
   list:
@@ -32,8 +32,8 @@ routes:
 		t.Fatalf("Parse() error = %v", err)
 	}
 
-	if cfg.Resource != "agent" {
-		t.Errorf("Resource = %s, want agent", cfg.Resource)
+	if cfg.Name != "agent" {
+		t.Errorf("Name = %s, want agent", cfg.Name)
 	}
 
 	if len(cfg.Routes) != 2 {
@@ -54,7 +54,7 @@ routes:
 
 func TestParseRouteConfig_TypeAndExample(t *testing.T) {
 	yamlContent := `
-resource: test
+name: test
 description: 测试模块
 routes:
   create:
@@ -103,7 +103,7 @@ routes:
 
 func TestGetTemplate(t *testing.T) {
 	cfg := &RouteConfig{
-		Resource: "agent",
+		Name: "agent",
 		Routes: map[string]Route{
 			"create": {
 				Method:      "POST",

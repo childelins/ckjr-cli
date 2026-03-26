@@ -50,7 +50,7 @@ func TestAppendToFile(t *testing.T) {
 	path := filepath.Join(dir, "test.yaml")
 
 	// 写入初始文件
-	initial := `resource: agent
+	initial := `name: agent
 description: AI智能体管理
 routes:
     list:
@@ -96,7 +96,7 @@ func TestAppendToFile_Conflict(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.yaml")
 
-	initial := `resource: agent
+	initial := `name: agent
 description: test
 routes:
     list:
@@ -134,8 +134,8 @@ func TestCreateFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
 	}
-	if cfg.Resource != "order" {
-		t.Errorf("Resource = %q, want order", cfg.Resource)
+	if cfg.Name != "order" {
+		t.Errorf("Name = %q, want order", cfg.Name)
 	}
 	if cfg.Description != "订单管理" {
 		t.Errorf("Description = %q", cfg.Description)

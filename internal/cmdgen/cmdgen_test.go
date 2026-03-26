@@ -16,7 +16,7 @@ import (
 
 func TestBuildCommand(t *testing.T) {
 	cfg := &router.RouteConfig{
-		Resource:    "agent",
+		Name:        "agent",
 		Description: "AI智能体管理",
 		Routes: map[string]router.Route{
 			"list": {
@@ -69,7 +69,7 @@ func TestBuildCommand(t *testing.T) {
 
 func TestTemplateFlag(t *testing.T) {
 	cfg := &router.RouteConfig{
-		Resource: "agent",
+		Name:     "agent",
 		Routes: map[string]router.Route{
 			"create": {
 				Method: "POST",
@@ -133,7 +133,7 @@ func TestBuildSubCommand_GeneratesRequestID(t *testing.T) {
 	defer slog.SetDefault(old)
 
 	cfg := &router.RouteConfig{
-		Resource: "test",
+		Name: "test",
 		Routes: map[string]router.Route{
 			"list": {
 				Method:      "POST",
