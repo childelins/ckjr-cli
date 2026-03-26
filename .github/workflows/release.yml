@@ -43,7 +43,7 @@ jobs:
             BINARY_NAME=ckjr-cli.exe
           fi
           mkdir -p dist/ckjr-cli_${VERSION}_${GOOS}_${GOARCH}
-          go build -ldflags="-s -w -X main.Version=${VERSION}" -o dist/ckjr-cli_${VERSION}_${GOOS}_${GOARCH}/${BINARY_NAME} ./cmd/ckjr-cli
+          go build -ldflags="-s -w -X main.Version=${VERSION} -X main.Environment=production" -o dist/ckjr-cli_${VERSION}_${GOOS}_${GOARCH}/${BINARY_NAME} ./cmd/ckjr-cli
 
       - name: Create archive
         env:
