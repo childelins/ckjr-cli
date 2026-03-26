@@ -402,3 +402,24 @@
 ### Phase 77: 更新 CI release 构建注入 Environment
 - Status: complete (a508f24)
 - release.yml go build ldflags 新增 -X main.Environment=production
+
+## 2026-03-26 Version Flag ldflags 注入修复
+
+### Phase 78: 重构 cmd 包的 Version/Environment 为私有变量 + setter
+- Status: complete (76eb962)
+- cmd/root.go: Version/Environment 从导出变量改为私有变量 version/environment
+- 新增 SetVersion(v) 和 SetEnvironment(e) setter 方法
+- rootCmd.Version 初始化改为引用私有变量 version
+- initLogging 中 Environment 引用改为 environment
+- 新增 TestSetVersion、TestSetEnvironment 测试（先写失败测试，再实现）
+
+### Phase 79: 在 main 包定义 Version/Environment 供 ldflags 注入
+- Status: complete (00b5294)
+- cmd/ckjr-cli/main.go 新增 Version/Environment 变量（默认 "dev"/"production"）
+- init() 调用 cmd.SetVersion/cmd.SetEnvironment 传递给 cmd 包
+- 验证: 不带 ldflags --version 输出 "dev"，带 ldflags -X main.Version=v9.9.9 输出 "v9.9.9"
+
+### Phase 80: 补充版本默认值测试
+- Status: complete (d1eb851)
+- 新增 TestDefaultVersion 验证 version 默认值 "dev"
+- 新增 TestDefaultEnvironment 验证 environment 默认值 "production"

@@ -957,3 +957,45 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# Version Flag ldflags 注入修复 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-version-flag.md
+
+## 概述
+
+修复 --version flag 的 ldflags 注入问题，将 Version/Environment 变量移到 main 包保持短路径，通过 setter 方法传递给 cmd 包。
+
+---
+
+## Phase 78: 重构 cmd 包的 Version/Environment 为私有变量 + setter
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (76eb962)
+- **Description**: 将 cmd/root.go 的 Version/Environment 改为私有变量，添加 SetVersion/SetEnvironment setter 方法，TDD 方式实现
+
+---
+
+## Phase 79: 在 main 包定义 Version/Environment 供 ldflags 注入
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (00b5294)
+- **Description**: 修改 cmd/ckjr-cli/main.go，定义 Version/Environment 变量供 ldflags 注入，init() 调用 setter
+
+---
+
+## Phase 80: 补充版本默认值测试
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (d1eb851)
+- **Description**: 新增 TestDefaultVersion/TestDefaultEnvironment 测试
+
+---
+
+## 遇到的错误 (Version Flag ldflags)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
