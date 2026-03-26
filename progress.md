@@ -268,3 +268,80 @@
 - Status: complete (pending commit)
 - 在 routeCmd 定义中设置 Hidden: true
 - 新增 TestRouteCmd_IsHidden 测试
+
+## 2026-03-26 Workflow YAML 实现
+
+### Phase 52: workflow 包 - 数据结构与 Parse
+- Status: complete (82d7fb8)
+- 创建 internal/workflow 包
+- 实现 Input/Step/Workflow/Config 数据结构
+- 实现 Parse 函数解析 YAML
+- 测试覆盖：InvalidYAML、ValidWorkflow、EmptyWorkflows
+
+### Phase 53: Describe 函数
+- Status: complete (4a8e82d)
+- 实现 Describe 函数，输出 AI 可读的 workflow 文本描述
+- 输出包含：Workflow 名称、Description、Inputs（必填/可选）、Steps（命令/参数/输出）、Summary
+- 测试覆盖：Output、NoInputs
+
+### Phase 54: workflow YAML 文件
+- Status: complete (97dad85)
+- 创建 cmd/workflows/agent.yaml
+- 包含 create-agent 工作流（5 个 inputs: name/desc/avatar/instructions/greeting，3 个 steps: create/update/get-link）
+- 测试覆盖：TestParse_AgentWorkflowFile
+
+### Phase 55: workflow 命令 (list + describe)
+- Status: complete (c4adea9)
+- 创建 cmd/workflow.go 实现 workflow list/describe 子命令
+- 使用 //go:embed 嵌入 workflows 目录
+- 在 cmd/root.go 注册 workflow 命令
+- 测试覆盖：TestWorkflowList、TestWorkflowDescribe、TestWorkflowDescribe_NotFound
+- 全项目测试通过
+
+### Phase 56: 更新 SKILL.md
+- Status: complete (3914de0)
+- 在 skills/ckjr-cli/SKILL.md 添加 workflow 优先策略
+- 指导 AI 优先使用 workflow list/describe 发现多步骤任务
+- 构建验证通过
+
+### Phase 57: 安装并端到端验证
+- Status: complete (final)
+- go install 安装成功
+- workflow list/describe/--help 验证通过
+- 原有命令（agent/common）正常工作
+- 全量测试通过（62 个测试，无回归）
+
+## 2026-03-26 Routes Resource to Name
+
+### Phase 58: 修改 RouteConfig 结构体
+- Status: complete (4a801b5)
+- internal/router/router.go: Resource → Name 字段重命名
+
+### Phase 59: 更新 cmdgen 代码
+- Status: complete (3a22b41)
+- internal/cmdgen/cmdgen.go: cfg.Resource → cfg.Name
+
+### Phase 60: 更新 yamlgen 代码
+- Status: complete (1143330)
+- internal/yamlgen/generate.go: CreateFile 参数名调整
+
+### Phase 61: 更新 route 命令 CLI 参数
+- Status: complete (955aab3)
+- cmd/route.go: --resource-desc → --name-desc，移除 --resource 参数
+
+### Phase 62: 更新 YAML 文件
+- Status: complete (3d525ae)
+- cmd/routes/common.yaml, agent.yaml: resource → name 字段
+
+### Phase 63: 更新测试文件
+- Status: complete (89daa09)
+- router_test.go, route_test.go, generate_test.go, cmdgen_test.go: 断言更新
+
+### Phase 64: 验证和集成测试
+- Status: complete (final)
+- 全量测试通过（66 个测试，无回归）
+- 验收标准全部满足:
+  - go run . agent describe 正常显示
+  - route import --name-desc 正常工作
+  - 生成的 YAML 文件使用 name 字段
+  - 代码中无 cfg.Resource 引用

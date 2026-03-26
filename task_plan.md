@@ -623,3 +623,197 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# Workflow YAML 实现 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-workflow-yaml.md
+
+## 概述
+
+为 ckjr-cli 添加 workflow 层，让 AI 通过 `workflow describe` 一次性获取多步骤任务的完整编排定义，替代逐步 --help/--template 发现模式。
+
+---
+
+## Phase 52: workflow 包 - 数据结构与 Parse
+
+- **Source**: Plan → Task 1
+- **Status**: complete (82d7fb8)
+- **Description**: 创建 internal/workflow 包，实现 Input/Step/Workflow/Config 数据结构，实现 Parse 函数解析 YAML，编写单元测试验证
+
+---
+
+## Phase 53: Describe 函数
+
+- **Source**: Plan → Task 2
+- **Status**: complete (4a8e82d)
+- **Description**: 在 workflow 包实现 Describe 函数，输出 AI 可读的 workflow 文本描述（包含 inputs、steps、summary）
+
+---
+
+## Phase 54: workflow YAML 文件
+
+- **Source**: Plan → Task 3
+- **Status**: complete (97dad85)
+- **Description**: 创建 cmd/workflows/agent.yaml 智能体工作流定义，包含 create-agent 工作流（inputs: name/desc/avatar/instructions/greeting，steps: create/update/get-link）
+
+---
+
+## Phase 55: workflow 命令 (list + describe)
+
+- **Source**: Plan → Task 4
+- **Status**: complete (c4adea9)
+- **Description**: 创建 cmd/workflow.go 实现 workflow list/describe 子命令，使用 //go:embed 嵌入 workflows 目录，在 cmd/root.go 注册 workflow 命令
+
+---
+
+## Phase 56: 更新 SKILL.md
+
+- **Source**: Plan → Task 5
+- **Status**: complete (3914de0)
+- **Description**: 在 skills/ckjr-cli/SKILL.md 添加 workflow 优先策略，指导 AI 优先使用 workflow list/descover 发现多步骤任务
+
+---
+
+## Phase 57: 安装并端到端验证
+
+- **Source**: Plan → Task 6
+- **Status**: complete (final)
+- **Description**: 安装更新后的 CLI，验证 workflow list/describe/--help 命令，确认原有命令未受影响，运行全量测试
+
+---
+
+## 遇到的错误 (Workflow YAML)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
+---
+---
+# Routes Resource to Name - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-routes-resource-to-name.md
+
+## 概述
+
+将 routes YAML 配置中的 `resource` 字段重命名为 `name`，与 workflows YAML 保持命名一致性。
+
+---
+
+## Phase 58: 修改 RouteConfig 结构体
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (4a801b5)
+- **Description**: 修改 internal/router/router.go 中 RouteConfig.Resource 为 RouteConfig.Name，运行测试确认失败后提交
+
+---
+
+## Phase 59: 更新 cmdgen 代码
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (3a22b41)
+- **Description**: 修改 internal/cmdgen/cmdgen.go 中 cfg.Resource 为 cfg.Name，运行测试通过后提交
+
+---
+
+## Phase 60: 更新 yamlgen 代码
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (1143330)
+- **Description**: 修改 internal/yamlgen/generate.go 中 resource 参数为 name，运行测试通过后提交
+
+---
+
+## Phase 61: 更新 route 命令 CLI 参数
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (955aab3)
+- **Description**: 修改 cmd/route.go 中 --resource 为 --name，--resource-desc 为 --name-desc，运行测试通过后提交
+
+---
+
+## Phase 62: 更新 YAML 文件
+
+- **Source**: Plan -> Task 5
+- **Status**: complete (3d525ae)
+- **Description**: 更新 cmd/routes/common.yaml 和 cmd/routes/agent.yaml 中的 resource 字段为 name，验证后提交
+
+---
+
+## Phase 63: 更新测试文件
+
+- **Source**: Plan -> Task 6
+- **Status**: complete (89daa09)
+- **Description**: 更新 router_test.go、route_test.go、generate_test.go 中的断言，运行全量测试通过后提交
+
+---
+
+## Phase 64: 验证和集成测试
+
+- **Source**: Plan -> Task 7
+- **Status**: complete (final)
+- **Description**: 运行完整测试套件，测试 CLI 命令端到端验证
+
+---
+
+## Phase 59: 更新 cmdgen 代码
+
+- **Source**: Plan -> Task 2
+- **Status**: in_progress
+- **Description**: 修改 internal/cmdgen/cmdgen.go 中 cfg.Resource 为 cfg.Name，运行测试通过后提交
+
+---
+
+## Phase 59: 更新 cmdgen 代码
+
+- **Source**: Plan -> Task 2
+- **Status**: pending
+- **Description**: 修改 internal/cmdgen/cmdgen.go 中 cfg.Resource 为 cfg.Name，运行测试通过后提交
+
+---
+
+## Phase 60: 更新 yamlgen 代码
+
+- **Source**: Plan -> Task 3
+- **Status**: pending
+- **Description**: 修改 internal/yamlgen/generate.go 中 resource 参数为 name，运行测试通过后提交
+
+---
+
+## Phase 61: 更新 route 命令 CLI 参数
+
+- **Source**: Plan -> Task 4
+- **Status**: pending
+- **Description**: 修改 cmd/route.go 中 --resource 为 --name，--resource-desc 为 --name-desc，运行测试通过后提交
+
+---
+
+## Phase 62: 更新 YAML 文件
+
+- **Source**: Plan -> Task 5
+- **Status**: pending
+- **Description**: 更新 cmd/routes/common.yaml 和 cmd/routes/agent.yaml 中的 resource 字段为 name，验证后提交
+
+---
+
+## Phase 63: 更新测试文件
+
+- **Source**: Plan -> Task 6
+- **Status**: pending
+- **Description**: 更新 router_test.go、route_test.go、generate_test.go 中的断言，运行全量测试通过后提交
+
+---
+
+## Phase 64: 验证和集成测试
+
+- **Source**: Plan -> Task 7
+- **Status**: pending
+- **Description**: 运行完整测试套件，测试 CLI 命令端到端验证
+
+---
+
+## 遇到的错误 (Routes Resource to Name)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
