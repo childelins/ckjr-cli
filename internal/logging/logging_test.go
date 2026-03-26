@@ -80,6 +80,38 @@ func TestInit_CreatesLogFile(t *testing.T) {
 	}
 }
 
+func TestParseEnvironment(t *testing.T) {
+	tests := []struct {
+		input string
+		want  Environment
+	}{
+		{"development", Development},
+		{"dev", Development},
+		{"Development", Development},
+		{"DEV", Development},
+		{"production", Production},
+		{"prod", Production},
+		{"Production", Production},
+		{"", Production},
+		{"invalid", Production},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := ParseEnvironment(tt.input)
+			if got != tt.want {
+				t.Errorf("ParseEnvironment(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsDev_DefaultProduction(t *testing.T) {
+	// 未调用 Init 时 currentEnv 为默认值 Production
+	if IsDev() {
+		t.Error("IsDev() should return false by default")
+	}
+}
+
 func TestInit_VerboseMode(t *testing.T) {
 	tmpDir := t.TempDir()
 	err := Init(true, tmpDir)

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,30 @@ func RequestIDFrom(ctx context.Context) string {
 		return id
 	}
 	return ""
+}
+
+// Environment 日志环境模式
+type Environment int
+
+const (
+	Production  Environment = iota // 生产环境：INFO 级别，不记录 body
+	Development                    // 开发环境：DEBUG 级别，记录完整 body
+)
+
+var currentEnv = Production // 默认生产环境
+
+// ParseEnvironment 将字符串解析为 Environment
+// 无效值默认为 Production
+func ParseEnvironment(s string) Environment {
+	if strings.EqualFold(s, "development") || strings.EqualFold(s, "dev") {
+		return Development
+	}
+	return Production
+}
+
+// IsDev 返回当前是否为开发环境
+func IsDev() bool {
+	return currentEnv == Development
 }
 
 // Init 初始化日志系统
