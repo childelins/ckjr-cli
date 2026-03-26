@@ -48,15 +48,15 @@ func AppendToFile(path string, name string, route router.Route) error {
 }
 
 // CreateFile 创建新的 YAML 路由文件
-func CreateFile(path string, resource string, resourceDesc string, name string, route router.Route) error {
+func CreateFile(path string, name string, nameDesc string, routeName string, route router.Route) error {
 	if _, err := os.Stat(path); err == nil {
 		return fmt.Errorf("文件已存在: %s", path)
 	}
 
 	cfg := &router.RouteConfig{
-		Resource:    resource,
-		Description: resourceDesc,
-		Routes:      map[string]router.Route{name: route},
+		Name:        name,
+		Description: nameDesc,
+		Routes:      map[string]router.Route{routeName: route},
 	}
 	return writeConfig(path, cfg)
 }
