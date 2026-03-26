@@ -53,6 +53,9 @@ func init() {
 	// 注册 route 命令
 	rootCmd.AddCommand(routeCmd)
 
+	// 注册 workflow 命令
+	rootCmd.AddCommand(workflowCmd)
+
 	// 注册动态生成的命令
 	registerRouteCommands()
 }
