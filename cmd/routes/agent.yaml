@@ -10,10 +10,12 @@ routes:
         description: 页码
         required: false
         default: 1
+        type: int
       limit:
         description: 每页数量
         required: false
         default: 10
+        type: int
       name:
         description: 按名称搜索
         required: false
@@ -21,10 +23,12 @@ routes:
         description: 是否分页返回, 1-是 0-否
         required: false
         default: 0
+        type: int
       platType:
         description: 智能体类型, 0-全部 1-自营智能体 2-Coze智能体
         required: false
         default: 0
+        type: int
   get:
     method: POST
     path: /admin/aiCreationCenter/describeApp
@@ -51,14 +55,17 @@ routes:
         description: 智能体类型, 99-自营智能体 100-Coze智能体
         required: false
         default: 99
+        type: int
       isSaleOnly:
         description: 是否支持售卖, 1-交付型 0-客服型
         required: false
         default: 1
+        type: int
       promptType:
         description: 提示词模板类型, 1-交付型 3-角色类/客服型
         required: false
         default: 3
+        type: int
   update:
     method: POST
     path: /admin/aiCreationCenter/modifyApp
