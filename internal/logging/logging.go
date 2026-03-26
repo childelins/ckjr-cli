@@ -62,8 +62,11 @@ func IsDev() bool {
 
 // Init 初始化日志系统
 // baseDir 为日志根目录（生产环境传 ~/.ckjr，测试传 t.TempDir()）
-// verbose=true 时额外输出到 stderr
-func Init(verbose bool, baseDir string) error {
+// verbose=true 时额外输出到 stderr（不受 env 影响）
+// env 控制日志级别：development=DEBUG，production=INFO
+func Init(verbose bool, baseDir string, env Environment) error {
+	currentEnv = env
+
 	logDir := filepath.Join(baseDir, "logs")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return fmt.Errorf("创建日志目录失败: %w", err)
@@ -75,10 +78,15 @@ func Init(verbose bool, baseDir string) error {
 		return fmt.Errorf("打开日志文件失败: %w", err)
 	}
 
-	fileHandler := slog.NewJSONHandler(file, &slog.HandlerOptions{Level: slog.LevelInfo})
+	level := slog.LevelInfo
+	if env == Development {
+		level = slog.LevelDebug
+	}
+
+	fileHandler := slog.NewJSONHandler(file, &slog.HandlerOptions{Level: level})
 
 	if verbose {
-		stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})
+		stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 		slog.SetDefault(slog.New(newMultiHandler(fileHandler, stderrHandler)))
 	} else {
 		slog.SetDefault(slog.New(fileHandler))

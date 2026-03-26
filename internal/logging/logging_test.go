@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -51,7 +52,7 @@ func TestRequestIDFrom_Empty(t *testing.T) {
 
 func TestInit_CreatesLogDir(t *testing.T) {
 	tmpDir := t.TempDir()
-	err := Init(false, tmpDir)
+	err := Init(false, tmpDir, Production)
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
 	}
@@ -64,7 +65,7 @@ func TestInit_CreatesLogDir(t *testing.T) {
 
 func TestInit_CreatesLogFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	err := Init(false, tmpDir)
+	err := Init(false, tmpDir, Production)
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
 	}
@@ -114,7 +115,7 @@ func TestIsDev_DefaultProduction(t *testing.T) {
 
 func TestInit_VerboseMode(t *testing.T) {
 	tmpDir := t.TempDir()
-	err := Init(true, tmpDir)
+	err := Init(true, tmpDir, Production)
 	if err != nil {
 		t.Fatalf("Init(verbose=true) error = %v", err)
 	}
@@ -127,5 +128,70 @@ func TestInit_VerboseMode(t *testing.T) {
 
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
 		t.Errorf("Init(verbose) should still create log file %s", logFile)
+	}
+}
+
+func TestInit_DevLogLevel(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := Init(false, tmpDir, Development)
+	if err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	today := time.Now().Format("2006-01-02")
+	logFile := filepath.Join(tmpDir, "logs", today+".log")
+
+	// DEBUG 级别日志应被记录
+	slog.Debug("debug message")
+	slog.Info("info message")
+
+	data, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "debug message") {
+		t.Error("dev mode should log DEBUG messages")
+	}
+	if !strings.Contains(content, "info message") {
+		t.Error("dev mode should log INFO messages")
+	}
+}
+
+func TestInit_ProdLogLevel(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := Init(false, tmpDir, Production)
+	if err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	today := time.Now().Format("2006-01-02")
+	logFile := filepath.Join(tmpDir, "logs", today+".log")
+
+	// DEBUG 级别日志不应被记录
+	slog.Debug("debug message")
+	slog.Info("info message")
+
+	data, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	content := string(data)
+	if strings.Contains(content, "debug message") {
+		t.Error("prod mode should NOT log DEBUG messages")
+	}
+	if !strings.Contains(content, "info message") {
+		t.Error("prod mode should log INFO messages")
+	}
+}
+
+func TestIsDev_AfterInit(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := Init(false, tmpDir, Development)
+	if err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+	if !IsDev() {
+		t.Error("IsDev() should return true after Init with Development")
 	}
 }
