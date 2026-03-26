@@ -10,18 +10,18 @@ allowed-tools:
 
 # ckjr-agent Skill
 
-使用 ckjr CLI 操作公司 SaaS 平台的 AI 智能体。
+使用 ckjr-cli 操作公司 SaaS 平台的 AI 智能体。
 
 ## 前置条件
 
 1. 安装 CLI：
    ```bash
-   go install github.com/childelins/ckjr-cli@latest
+   go install github.com/childelins/ckjr-cli/cmd/ckjr-cli@latest
    ```
 
 2. 初始化配置：
    ```bash
-   ckjr config init
+   ckjr-cli config init
    ```
    按提示设置 API 地址和 API Key。
 
@@ -30,50 +30,50 @@ allowed-tools:
 ### 查看帮助
 
 ```bash
-ckjr --help
-ckjr agent --help
+ckjr-cli --help
+ckjr-cli agent --help
 ```
 
 ### 智能体列表
 
 ```bash
 # 查看所有智能体
-ckjr agent list
+ckjr-cli agent list
 
 # 带筛选条件
-ckjr agent list '{"name":"助手","page":1,"limit":20}'
+ckjr-cli agent list '{"name":"助手","page":1,"limit":20}'
 
 # 查看参数模板
-ckjr agent list --template
+ckjr-cli agent list --template
 ```
 
 ### 智能体详情
 
 ```bash
-ckjr agent get '{"aikbId":"xxx"}'
+ckjr-cli agent get '{"aikbId":"xxx"}'
 ```
 
 ### 创建智能体
 
 ```bash
 # 查看必填参数
-ckjr agent create --template
+ckjr-cli agent create --template
 
 # 创建
-ckjr agent create '{"name":"销售助手","avatar":"https://...","desc":"帮助销售团队"}'
+ckjr-cli agent create '{"name":"销售助手","avatar":"https://...","desc":"帮助销售团队"}'
 ```
 
 ### 更新智能体
 
 ```bash
-ckjr agent update --template
-ckjr agent update '{"aikbId":"xxx","name":"新名称"}'
+ckjr-cli agent update --template
+ckjr-cli agent update '{"aikbId":"xxx","name":"新名称"}'
 ```
 
 ### 删除智能体
 
 ```bash
-ckjr agent delete '{"aikbId":"xxx"}'
+ckjr-cli agent delete '{"aikbId":"xxx"}'
 ```
 
 ## 使用规则
@@ -87,7 +87,7 @@ ckjr agent delete '{"aikbId":"xxx"}'
 
 | 错误 | 原因 | 解决 |
 |------|------|------|
-| 未找到配置文件 | 未执行 config init | 执行 `ckjr config init` |
+| 未找到配置文件 | 未执行 config init | 执行 `ckjr-cli config init` |
 | API Key 过期 | 认证失败 | 重新获取 API Key |
 | 参数校验失败 | 必填字段缺失 | 使用 `--template` 检查参数 |
 

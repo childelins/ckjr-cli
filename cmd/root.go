@@ -24,8 +24,8 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "ckjr",
-	Short:   "Claude Code 与公司 SaaS 平台的桥梁",
+	Use:     "ckjr-cli",
+	Short:   "创客匠人 CLI - 知识付费 SaaS 系统的命令行工具",
 	Version: Version,
 }
 
@@ -108,7 +108,7 @@ func registerRouteCommands() {
 func createClient() (*api.Client, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		return nil, fmt.Errorf("未找到配置文件，请先执行 ckjr config init")
+		return nil, fmt.Errorf("未找到配置文件，请先执行 ckjr-cli config init")
 	}
 
 	return api.NewClient(cfg.BaseURL, cfg.APIKey), nil

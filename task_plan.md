@@ -339,3 +339,127 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# Field Type/Example 字段扩展 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-field-type-example.md
+
+## 概述
+
+为 agent.yaml 参数定义增加 type 和 example 字段，提升 --template 输出的信息完整度。扩展 Field 结构体增加两个可选 yaml 字段，printTemplate 展示层处理默认值和条件输出。
+
+---
+
+## Phase 30: Field 结构体增加 Type/Example 字段
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (12062f1)
+- **Description**: 在 internal/router/router.go 的 Field 结构体增加 Type (string) 和 Example (string) 两个 yaml 字段，添加测试验证 YAML 解析正确
+
+---
+
+## Phase 31: printTemplate 输出 type 和 example
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (3777fb4)
+- **Description**: 重构 printTemplate 为 printTemplateTo (接受 io.Writer)，输出中增加 type (默认 string) 和 example (条件输出) 字段
+
+---
+
+## Phase 32: 更新 agent.yaml 为数值型参数补充 type
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (7eb6870)
+- **Description**: 为 cmd/routes/agent.yaml 中所有数值型参数补充 type: int，运行全量测试确认无回归
+
+---
+
+## 遇到的错误 (Field Type/Example)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
+
+---
+---
+
+# CLI 重命名 (ckjr -> ckjr-cli) - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-cli-rename.md
+
+## 概述
+
+将 CLI 二进制名称从 ckjr 改为 ckjr-cli，公司名称"创客匠人"体现在描述中。纯重命名/文本替换任务。
+
+---
+
+## Phase 33: 更新测试断言 (TDD - 先改测试)
+
+- **Source**: Plan -> Task 1
+- **Status**: complete
+- **Description**: 更新 root_test.go 中 Use 字段断言从 ckjr 到 ckjr-cli
+
+---
+
+## Phase 34: 更新 cobra 命令定义
+
+- **Source**: Plan -> Task 2
+- **Status**: complete
+- **Description**: 更新 rootCmd Use 字段为 ckjr-cli，Short 描述为"创客匠人 CLI"，更新 createClient 错误提示
+
+---
+
+## Phase 35: 更新 config.go 错误提示
+
+- **Source**: Plan -> Task 3
+- **Status**: complete
+- **Description**: 更新 runConfigShow 错误提示中的 ckjr 为 ckjr-cli
+
+---
+
+## Phase 36: 重命名入口目录
+
+- **Source**: Plan -> Task 4
+- **Status**: complete
+- **Description**: 创建 cmd/ckjr-cli/main.go，需手动删除 cmd/ckjr/ 旧目录
+
+---
+
+## Phase 37: 更新构建与发布配置
+
+- **Source**: Plan -> Task 5
+- **Status**: complete
+- **Description**: 更新 release.yml 和 install.sh 中的 BINARY_NAME 和构建路径
+
+---
+
+## Phase 38: 更新技能文件
+
+- **Source**: Plan -> Task 6
+- **Status**: complete
+- **Description**: 更新 SKILL.md 和 skills/ckjr-agent/README.md 中所有 ckjr 命令引用为 ckjr-cli
+
+---
+
+## Phase 39: 更新项目 README.md
+
+- **Source**: Plan -> Task 7
+- **Status**: complete
+- **Description**: 更新 README.md 中所有命令调用、安装路径、描述，更新项目描述为"创客匠人 CLI"
+
+---
+
+## Phase 40: 最终验证
+
+- **Source**: Plan -> Task 8
+- **Status**: pending (需手动执行)
+- **Description**: 全量测试、构建验证、全局搜索遗漏
+
+---
+
+## 遇到的错误 (CLI 重命名)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|

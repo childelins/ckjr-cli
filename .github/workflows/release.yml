@@ -38,12 +38,12 @@ jobs:
           CGO_ENABLED: 0
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
-          BINARY_NAME=ckjr
+          BINARY_NAME=ckjr-cli
           if [ "$GOOS" = "windows" ]; then
-            BINARY_NAME=ckjr.exe
+            BINARY_NAME=ckjr-cli.exe
           fi
-          mkdir -p dist/ckjr_${VERSION}_${GOOS}_${GOARCH}
-          go build -ldflags="-s -w -X main.Version=${VERSION}" -o dist/ckjr_${VERSION}_${GOOS}_${GOARCH}/${BINARY_NAME} .
+          mkdir -p dist/ckjr-cli_${VERSION}_${GOOS}_${GOARCH}
+          go build -ldflags="-s -w -X main.Version=${VERSION}" -o dist/ckjr-cli_${VERSION}_${GOOS}_${GOARCH}/${BINARY_NAME} ./cmd/ckjr-cli
 
       - name: Create archive
         env:

@@ -189,3 +189,62 @@
 - Status: complete (0836c05)
 - 全部测试通过 (39 个测试)
 - 提交 feat: add private repo install and distribution support
+
+## 2026-03-26 Field Type/Example 字段扩展
+
+### Phase 30: Field 结构体增加 Type/Example 字段
+- Status: complete (12062f1)
+- Field 结构体增加 Type (string, yaml:"type") 和 Example (string, yaml:"example") 两个字段
+- 添加 TestParseRouteConfig_TypeAndExample 测试验证 YAML 解析正确
+- 未设置 type/example 的字段保持零值
+
+### Phase 31: printTemplate 输出 type 和 example
+- Status: complete (3777fb4)
+- 拆分 printTemplate 为 printTemplate (写 stdout) + printTemplateTo (接受 io.Writer，方便测试)
+- 输出增加 type 字段，未设置时默认 "string"
+- 输出增加 example 字段，仅在有值时输出（条件输出）
+- 添加 TestPrintTemplate_TypeAndExample 测试覆盖
+
+### Phase 32: 更新 agent.yaml 为数值型参数补充 type
+- Status: complete (7eb6870)
+- list 路由: page, limit, enablePagination, platType 补充 type: int
+- create 路由: botType, isSaleOnly, promptType 补充 type: int
+- 全量测试通过 (42 个测试，无回归)
+
+## 2026-03-26 CLI 重命名 (ckjr -> ckjr-cli)
+
+### Phase 33: 更新测试断言
+- Status: complete
+- cmd/root_test.go: Use 字段断言从 "ckjr" 改为 "ckjr-cli"
+
+### Phase 34: 更新 cobra 命令定义
+- Status: complete
+- cmd/root.go: Use 改为 "ckjr-cli"，Short 改为"创客匠人 CLI - 知识付费 SaaS 系统的命令行工具"
+- cmd/root.go: createClient 错误提示改为 "ckjr-cli config init"
+
+### Phase 35: 更新 config.go 错误提示
+- Status: complete
+- cmd/config.go: runConfigShow 错误提示改为 "ckjr-cli config init"
+
+### Phase 36: 重命名入口目录
+- Status: complete
+- 创建 cmd/ckjr-cli/main.go（内容与 cmd/ckjr/main.go 一致）
+- 需手动执行: git rm -r cmd/ckjr
+
+### Phase 37: 更新构建与发布配置
+- Status: complete
+- .github/workflows/release.yml: BINARY_NAME=ckjr-cli, 构建路径改为 ./cmd/ckjr-cli, dist 目录名改为 ckjr-cli_
+- install.sh: BINARY_NAME="ckjr-cli", go install 路径改为 cmd/ckjr-cli@latest
+
+### Phase 38: 更新技能文件
+- Status: complete
+- skills/ckjr-agent/SKILL.md: 所有 ckjr 命令引用改为 ckjr-cli（约 20 处），go install 路径修复
+- skills/ckjr-agent/README.md: 命令表格和描述中 ckjr 改为 ckjr-cli
+
+### Phase 39: 更新项目 README.md
+- Status: complete
+- README.md: 项目描述改为"创客匠人 CLI"，所有命令引用改为 ckjr-cli（约 25 处）
+- go install 路径和源码构建路径已更新
+
+### Phase 40: 最终验证
+- Status: pending (需手动执行)

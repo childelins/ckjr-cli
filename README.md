@@ -1,6 +1,6 @@
 # ckjr-cli
 
-基于 Go 的 CLI 工具，作为 Claude Code Skills 与公司 SaaS 平台之间的桥梁。
+创客匠人 CLI - 知识付费 SaaS 系统的命令行工具。
 
 通过 YAML 路由配置自动生成 CLI 子命令，无需手写 cobra 代码即可扩展新的 API 资源。
 
@@ -38,7 +38,7 @@ git config --global url."git@github.com:".insteadOf "https://github.com/"
 # git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
 # 安装
-go install github.com/childelins/ckjr-cli@latest
+go install github.com/childelins/ckjr-cli/cmd/ckjr-cli@latest
 ```
 
 ### 方式 3: 从源码构建
@@ -46,7 +46,7 @@ go install github.com/childelins/ckjr-cli@latest
 ```bash
 git clone git@github.com:childelins/ckjr-cli.git
 cd ckjr-cli
-go install .          # 自动安装到 $GOPATH/bin 或 $GOBIN
+go install ./cmd/ckjr-cli  # 自动安装到 $GOPATH/bin 或 $GOBIN
 ```
 
 ### Fork 自定义
@@ -66,7 +66,7 @@ go install .          # 自动安装到 $GOPATH/bin 或 $GOBIN
 ### 1. 初始化配置
 
 ```bash
-ckjr config init
+ckjr-cli config init
 ```
 
 按提示输入 API 地址和 API Key，配置保存在 `~/.ckjr/config.json`。
@@ -74,17 +74,17 @@ ckjr config init
 也可以单独设置配置项：
 
 ```bash
-ckjr config set base_url https://your-api.example.com
-ckjr config set api_key your-api-key
+ckjr-cli config set base_url https://your-api.example.com
+ckjr-cli config set api_key your-api-key
 ```
 
 ### 2. 查看配置
 
 ```bash
-ckjr config show
+ckjr-cli config show
 # {"api_key":"your-***","base_url":"https://your-api.example.com"}
 
-ckjr config show --pretty
+ckjr-cli config show --pretty
 ```
 
 API Key 在展示时会自动脱敏。
@@ -94,34 +94,34 @@ API Key 在展示时会自动脱敏。
 查看参数模板：
 
 ```bash
-ckjr agent list --template
-ckjr agent create --template
+ckjr-cli agent list --template
+ckjr-cli agent create --template
 ```
 
 调用 API：
 
 ```bash
 # 列表
-ckjr agent list
-ckjr agent list '{"page":1,"limit":20}'
+ckjr-cli agent list
+ckjr-cli agent list '{"page":1,"limit":20}'
 
 # 详情
-ckjr agent get '{"aikbId":"xxx"}'
+ckjr-cli agent get '{"aikbId":"xxx"}'
 
 # 创建
-ckjr agent create '{"name":"my-agent","avatar":"https://...","desc":"描述"}'
+ckjr-cli agent create '{"name":"my-agent","avatar":"https://...","desc":"描述"}'
 
 # 更新
-ckjr agent update '{"aikbId":"xxx","name":"new-name","avatar":"https://...","desc":"新描述"}'
+ckjr-cli agent update '{"aikbId":"xxx","name":"new-name","avatar":"https://...","desc":"新描述"}'
 
 # 删除
-ckjr agent delete '{"aikbId":"xxx"}'
+ckjr-cli agent delete '{"aikbId":"xxx"}'
 ```
 
 支持从 stdin 读取输入：
 
 ```bash
-echo '{"page":1}' | ckjr agent list -
+echo '{"page":1}' | ckjr-cli agent list -
 ```
 
 ### 全局选项
@@ -152,7 +152,7 @@ grep "requestId值" ~/.ckjr/logs/2026-03-25.log
 加 `--verbose` 可同时在终端看到请求日志：
 
 ```bash
-ckjr agent list --verbose
+ckjr-cli agent list --verbose
 ```
 
 ## 扩展新资源
@@ -182,7 +182,7 @@ routes:
         required: true
 ```
 
-重新编译后即可使用 `ckjr example list`、`ckjr example get` 等命令。
+重新编译后即可使用 `ckjr-cli example list`、`ckjr-cli example get` 等命令。
 
 ## 项目结构
 
@@ -217,18 +217,15 @@ go test ./... -v
 
 ### 安装 Skill
 
-**方式 1: 本地文件(推荐)**
-
 ```bash
 git clone git@github.com:childelins/ckjr-cli.git
-claude skills add ./ckjr-cli/skills/ckjr-agent
-```
+cd ckjr-cli
 
-**方式 2: 远程 URL (需 PAT)**
+# 复制到 skills 目录
+cp -r skills/ckjr-agent ~/.claude/skills/
 
-```bash
-export GITHUB_TOKEN=ghp_xxx
-claude skills add https://github.com/childelins/ckjr-cli --skill ckjr-agent
+# 或使用符号链接（方便跟随仓库更新）
+# ln -s "$(pwd)/skills/ckjr-agent" ~/.claude/skills/ckjr-agent
 ```
 
 详细说明见 [skills/ckjr-agent/README.md](skills/ckjr-agent/README.md)。
@@ -241,4 +238,4 @@ claude skills add https://github.com/childelins/ckjr-cli --skill ckjr-agent
 - "查看所有智能体列表"
 - "删除 ID 为 xxx 的智能体"
 
-Claude 会自动调用 ckjr 命令完成操作。
+Claude 会自动调用 ckjr-cli 命令完成操作。

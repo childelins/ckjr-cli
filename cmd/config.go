@@ -107,7 +107,7 @@ func runConfigSet(cmd *cobra.Command, args []string) {
 func runConfigShow(cmd *cobra.Command, args []string) {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "读取配置失败: %v\n请先执行 ckjr config init\n", err)
+		fmt.Fprintf(os.Stderr, "读取配置失败: %v\n请先执行 ckjr-cli config init\n", err)
 		os.Exit(1)
 	}
 

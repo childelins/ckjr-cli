@@ -47,4 +47,5 @@ logs/
 
 # SPF planning files (generated during development)
 .spf-state.json
+.spf-brainstorm-session.json
 .openviking/

@@ -10,8 +10,8 @@ func TestRootCmdExists(t *testing.T) {
 	if rootCmd == nil {
 		t.Fatal("rootCmd should not be nil")
 	}
-	if rootCmd.Use != "ckjr" {
-		t.Errorf("rootCmd.Use = %s, want ckjr", rootCmd.Use)
+	if rootCmd.Use != "ckjr-cli" {
+		t.Errorf("rootCmd.Use = %s, want ckjr-cli", rootCmd.Use)
 	}
 }
 

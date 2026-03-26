@@ -3,7 +3,7 @@ set -e
 
 # 配置变量 - Fork 用户可修改此处
 REPO="childelins/ckjr-cli"
-BINARY_NAME="ckjr"
+BINARY_NAME="ckjr-cli"
 INSTALL_DIR="$HOME/.local/bin"
 
 # 颜色输出
@@ -58,7 +58,7 @@ install_via_go() {
         warn "No authentication configured. Private repo access may fail."
     fi
 
-    go install "github.com/${REPO}@latest"
+    go install "github.com/${REPO}/cmd/ckjr-cli@latest"
     info "Installed via go install"
 }
 
