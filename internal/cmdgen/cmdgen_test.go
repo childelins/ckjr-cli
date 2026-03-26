@@ -171,6 +171,47 @@ func TestBuildSubCommand_GeneratesRequestID(t *testing.T) {
 	}
 }
 
+func TestPrintTemplate_TypeAndExample(t *testing.T) {
+	template := map[string]router.Field{
+		"count": {
+			Description: "数量",
+			Required:    false,
+			Default:     10,
+			Type:        "int",
+			Example:     "10",
+		},
+		"name": {
+			Description: "名称",
+			Required:    true,
+		},
+	}
+
+	var buf bytes.Buffer
+	printTemplateTo(&buf, template)
+	var result map[string]map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v", err)
+	}
+
+	// count: 有 type=int 和 example
+	countEntry := result["count"]
+	if countEntry["type"] != "int" {
+		t.Errorf("count.type = %v, want \"int\"", countEntry["type"])
+	}
+	if countEntry["example"] != "10" {
+		t.Errorf("count.example = %v, want \"10\"", countEntry["example"])
+	}
+
+	// name: 无 type 应默认 string，无 example 应不存在
+	nameEntry := result["name"]
+	if nameEntry["type"] != "string" {
+		t.Errorf("name.type = %v, want \"string\"", nameEntry["type"])
+	}
+	if _, exists := nameEntry["example"]; exists {
+		t.Error("name should not have example field")
+	}
+}
+
 func TestHandleAPIError_ResponseError_Verbose(t *testing.T) {
 	var buf bytes.Buffer
 	respErr := &api.ResponseError{

@@ -119,6 +119,10 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 }
 
 func printTemplate(template map[string]router.Field) {
+	printTemplateTo(os.Stdout, template)
+}
+
+func printTemplateTo(w io.Writer, template map[string]router.Field) {
 	tmpl := make(map[string]interface{})
 	for name, field := range template {
 		entry := map[string]interface{}{
@@ -128,9 +132,17 @@ func printTemplate(template map[string]router.Field) {
 		if field.Default != nil {
 			entry["default"] = field.Default
 		}
+		t := field.Type
+		if t == "" {
+			t = "string"
+		}
+		entry["type"] = t
+		if field.Example != "" {
+			entry["example"] = field.Example
+		}
 		tmpl[name] = entry
 	}
-	output.Print(os.Stdout, tmpl, true)
+	output.Print(w, tmpl, true)
 }
 
 func applyDefaults(input map[string]interface{}, template map[string]router.Field) {
