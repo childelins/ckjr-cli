@@ -1,6 +1,9 @@
 package workflow
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParse_InvalidYAML(t *testing.T) {
 	_, err := Parse([]byte(":::invalid"))
@@ -86,5 +89,66 @@ workflows: {}
 	}
 	if len(cfg.Workflows) != 0 {
 		t.Errorf("Workflows 长度 = %d, want 0", len(cfg.Workflows))
+	}
+}
+
+func TestDescribe_Output(t *testing.T) {
+	wf := Workflow{
+		Description: "创建并配置智能体",
+		Inputs: []Input{
+			{Name: "name", Description: "名称", Required: true},
+			{Name: "tag", Description: "标签", Required: false, Hint: "默认为空"},
+		},
+		Steps: []Step{
+			{
+				ID: "create", Description: "创建", Command: "agent create",
+				Params: map[string]string{"name": "{{inputs.name}}"},
+				Output: map[string]string{"id": "response.data.id"},
+			},
+			{
+				ID: "update", Description: "更新", Command: "agent update",
+				Params: map[string]string{"id": "{{steps.create.id}}", "tag": "{{inputs.tag}}"},
+			},
+		},
+		Summary: "完成：{{inputs.name}}",
+	}
+
+	result := Describe(&wf, "test-flow")
+
+	checks := []string{
+		"Workflow: test-flow",
+		"创建并配置智能体",
+		"== 需要收集的信息 ==",
+		"1. name (必填): 名称",
+		"2. tag (可选): 标签",
+		"提示: 默认为空",
+		"== 执行步骤 ==",
+		"Step 1: create - 创建",
+		"命令: ckjr-cli agent create",
+		"输出: id",
+		"Step 2: update - 更新",
+		"== 完成摘要 ==",
+		"完成：{{inputs.name}}",
+	}
+	for _, check := range checks {
+		if !strings.Contains(result, check) {
+			t.Errorf("输出缺少 %q\n实际输出:\n%s", check, result)
+		}
+	}
+}
+
+func TestDescribe_NoInputs(t *testing.T) {
+	wf := Workflow{
+		Description: "简单流程",
+		Steps: []Step{
+			{ID: "run", Description: "执行", Command: "mod run"},
+		},
+	}
+	result := Describe(&wf, "simple")
+	if !strings.Contains(result, "Workflow: simple") {
+		t.Errorf("输出缺少 workflow 名称")
+	}
+	if !strings.Contains(result, "Step 1: run") {
+		t.Errorf("输出缺少步骤")
 	}
 }

@@ -1,6 +1,11 @@
 package workflow
 
-import "gopkg.in/yaml.v3"
+import (
+	"fmt"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
 
 type Input struct {
 	Name        string `yaml:"name"`
@@ -37,4 +42,55 @@ func Parse(data []byte) (*Config, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func Describe(wf *Workflow, name string) string {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "Workflow: %s\n", name)
+	fmt.Fprintf(&b, "Description: %s\n", wf.Description)
+
+	// Inputs
+	b.WriteString("\n== 需要收集的信息 ==\n")
+	for i, input := range wf.Inputs {
+		req := "可选"
+		if input.Required {
+			req = "必填"
+		}
+		fmt.Fprintf(&b, "%d. %s (%s): %s\n", i+1, input.Name, req, input.Description)
+		if input.Hint != "" {
+			fmt.Fprintf(&b, "   提示: %s\n", input.Hint)
+		}
+	}
+
+	// Steps
+	b.WriteString("\n== 执行步骤 ==\n")
+	for i, step := range wf.Steps {
+		fmt.Fprintf(&b, "Step %d: %s - %s\n", i+1, step.ID, step.Description)
+		fmt.Fprintf(&b, "  命令: ckjr-cli %s\n", step.Command)
+
+		if len(step.Params) > 0 {
+			params := make([]string, 0, len(step.Params))
+			for k, v := range step.Params {
+				params = append(params, k+"="+v)
+			}
+			fmt.Fprintf(&b, "  参数: %s\n", strings.Join(params, ", "))
+		}
+
+		if len(step.Output) > 0 {
+			outputs := make([]string, 0, len(step.Output))
+			for k := range step.Output {
+				outputs = append(outputs, k)
+			}
+			fmt.Fprintf(&b, "  输出: %s\n", strings.Join(outputs, ", "))
+		}
+	}
+
+	// Summary
+	if wf.Summary != "" {
+		b.WriteString("\n== 完成摘要 ==\n")
+		b.WriteString(wf.Summary)
+	}
+
+	return b.String()
 }
