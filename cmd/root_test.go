@@ -115,6 +115,24 @@ func TestVersionIsSet(t *testing.T) {
 	}
 }
 
+func TestSetVersion(t *testing.T) {
+	SetVersion("v1.2.3")
+	if rootCmd.Version != "v1.2.3" {
+		t.Errorf("rootCmd.Version = %s, want v1.2.3", rootCmd.Version)
+	}
+	// 恢复默认值，避免影响其他测试
+	SetVersion("dev")
+}
+
+func TestSetEnvironment(t *testing.T) {
+	SetEnvironment("development")
+	if environment != "development" {
+		t.Errorf("environment = %s, want development", environment)
+	}
+	// 恢复默认值，避免影响其他测试
+	SetEnvironment("production")
+}
+
 func TestVerboseFlag(t *testing.T) {
 	f := rootCmd.PersistentFlags().Lookup("verbose")
 	if f == nil {

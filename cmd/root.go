@@ -19,16 +19,25 @@ import (
 var routesFS embed.FS
 
 var (
-	// 版本信息，通过 ldflags 注入
-	Version = "dev"
-	// 环境模式，通过 ldflags 注入，可选值：development / production（默认）
-	Environment = "production"
+	version      = "dev"
+	environment  = "production"
 )
+
+// SetVersion 由 main 包调用，通过 ldflags 注入版本号
+func SetVersion(v string) {
+	version = v
+	rootCmd.Version = v
+}
+
+// SetEnvironment 由 main 包调用，通过 ldflags 注入环境模式
+func SetEnvironment(e string) {
+	environment = e
+}
 
 var rootCmd = &cobra.Command{
 	Use:               "ckjr-cli",
 	Short:             "创客匠人 CLI - 知识付费 SaaS 系统的命令行工具",
-	Version:           Version,
+	Version:           version,
 	CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 }
 
@@ -70,7 +79,7 @@ func initLogging() {
 		return
 	}
 	baseDir := filepath.Join(homeDir, ".ckjr")
-	env := logging.ParseEnvironment(Environment)
+	env := logging.ParseEnvironment(environment)
 	if err := logging.Init(verbose, baseDir, env); err != nil {
 		fmt.Fprintf(os.Stderr, "日志初始化失败: %v\n", err)
 	}
