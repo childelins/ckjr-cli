@@ -25,7 +25,7 @@ type Route struct {
 
 // RouteConfig 路由配置
 type RouteConfig struct {
-	Resource    string          `yaml:"resource"`
+	Name        string          `yaml:"name"`
 	Description string          `yaml:"description"`
 	Routes      map[string]Route `yaml:"routes"`
 }
