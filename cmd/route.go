@@ -24,9 +24,8 @@ var routeImportCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		curlStr, _ := cmd.Flags().GetString("curl")
 		file, _ := cmd.Flags().GetString("file")
-		name, _ := cmd.Flags().GetString("name")
-		resource, _ := cmd.Flags().GetString("resource")
-		resourceDesc, _ := cmd.Flags().GetString("resource-desc")
+		routeName, _ := cmd.Flags().GetString("name")
+		nameDesc, _ := cmd.Flags().GetString("name-desc")
 
 		// 从 stdin 读取
 		if curlStr == "" {
@@ -47,38 +46,38 @@ var routeImportCmd = &cobra.Command{
 			return fmt.Errorf("请通过 --file 参数指定目标 YAML 文件路径")
 		}
 
-		if err := runImport(curlStr, file, name, resource, resourceDesc); err != nil {
+		if err := runImport(curlStr, file, routeName, nameDesc); err != nil {
 			return err
 		}
 
-		fmt.Fprintf(os.Stdout, "已添加路由 %s 到 %s\n", name, file)
+		fmt.Fprintf(os.Stdout, "已添加路由 %s 到 %s\n", routeName, file)
 		return nil
 	},
 }
 
 // runImport 核心逻辑，方便测试
-func runImport(curlStr, file, name, resource, resourceDesc string) error {
+func runImport(curlStr, file, routeName, nameDesc string) error {
 	result, err := curlparse.Parse(curlStr)
 	if err != nil {
 		return fmt.Errorf("curl 解析失败: %w", err)
 	}
 
 	// 自动推导 route name
-	if name == "" {
-		name = inferRouteName(result.Path)
+	if routeName == "" {
+		routeName = inferRouteName(result.Path)
 	}
 
 	route := yamlgen.GenerateRoute(result)
 
 	// 判断追加还是新建
 	if _, err := os.Stat(file); err == nil {
-		return yamlgen.AppendToFile(file, name, route)
+		return yamlgen.AppendToFile(file, routeName, route)
 	}
 
-	if resource == "" {
-		return fmt.Errorf("新建文件需要通过 --resource 指定 resource 名称")
+	if nameDesc == "" {
+		return fmt.Errorf("新建文件需要通过 --name-desc 指定资源描述")
 	}
-	return yamlgen.CreateFile(file, resource, resourceDesc, name, route)
+	return yamlgen.CreateFile(file, routeName, nameDesc, routeName, route)
 }
 
 // inferRouteName 从 URL path 末段推导 route name
@@ -155,8 +154,7 @@ func init() {
 	routeImportCmd.Flags().String("curl", "", "curl 命令字符串")
 	routeImportCmd.Flags().StringP("file", "f", "", "目标 YAML 文件路径")
 	routeImportCmd.Flags().StringP("name", "n", "", "路由名称（默认从 URL 推导）")
-	routeImportCmd.Flags().String("resource", "", "resource 名称（新建文件时必填）")
-	routeImportCmd.Flags().String("resource-desc", "", "resource 描述")
+	routeImportCmd.Flags().String("name-desc", "", "资源名称描述")
 
 	routeCmd.AddCommand(routeImportCmd)
 }
