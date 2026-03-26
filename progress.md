@@ -365,3 +365,40 @@
 - 创建 wiki/cli-skill.md: Skill 介绍、安装方式、自发现机制、Workflow 优先策略
 - 验证全部 13 个相对链接有效
 - 验证关键命令可执行（--version, config --help, agent list --template, workflow list --help）
+
+## 2026-03-26 Log Environment Modes
+
+### Phase 73: logging 包新增 Environment 类型和辅助函数
+- Status: complete (752d87c)
+- 新增 Environment int 类型（Production=0, Development=1）
+- 新增 ParseEnvironment() 函数，支持 "development"/"dev" 解析为 Development，其他默认 Production
+- 新增 IsDev() 函数，返回 currentEnv == Development
+- 新增 currentEnv 包级变量，默认 Production
+- 10 个 ParseEnvironment 表驱动测试 + 1 个 IsDev 默认值测试
+
+### Phase 74: 更新 Init 签名，支持环境感知的日志级别
+- Status: complete (8e93967)
+- Init 签名新增 env Environment 参数
+- Development 模式设置 slog.LevelDebug，Production 模式设置 slog.LevelInfo
+- Init 设置 currentEnv = env
+- 更新 3 个现有测试的 Init 调用签名
+- 新增 TestInit_DevLogLevel、TestInit_ProdLogLevel、TestIsDev_AfterInit 3 个测试
+
+### Phase 75: api.Client 条件记录 request/response body
+- Status: complete (a5316d2)
+- DoCtx 的 api_request 日志：request_body 仅在 Development 模式记录
+- DoCtx 的 7 处 api_response 日志：response_body 仅在 Development 模式记录
+- 改用 []interface{} attrs 收集属性 + IsDev() 条件追加 body
+- 更新 5 个现有 body 测试设置 Development 环境
+- 新增 TestDoCtx_ProdOmitsBody 测试验证 Production 省略 body
+- cmd/root.go logging.Init 临时传 Production（Task 4 正式修复）
+
+### Phase 76: cmd/root.go 接入 Environment ldflags 变量
+- Status: complete (d015f38)
+- 新增 Environment = "production" 变量（可通过 ldflags 注入）
+- initLogging 使用 logging.ParseEnvironment(Environment) 解析后传给 Init
+- 编译验证通过
+
+### Phase 77: 更新 CI release 构建注入 Environment
+- Status: complete (a508f24)
+- release.yml go build ldflags 新增 -X main.Environment=production

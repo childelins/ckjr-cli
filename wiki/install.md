@@ -48,9 +48,21 @@ go install github.com/childelins/ckjr-cli/cmd/ckjr-cli@latest
 git clone git@github.com:childelins/ckjr-cli.git
 cd ckjr-cli
 
-# 构建
+# 生产构建（默认）- INFO 级别日志，省略 request/response body
 go install ./cmd/ckjr-cli
+
+# 开发构建 - DEBUG 级别日志，记录完整 request/response body
+go install -ldflags="-X main.Environment=development" ./cmd/ckjr-cli
 ```
+
+> 两种构建的区别仅在于日志行为：
+>
+> | 环境 | 日志级别 | request/response body |
+> |------|---------|---------------------|
+> | production（默认） | INFO | 不记录 |
+> | development | DEBUG | 记录完整内容 |
+>
+> `--verbose` flag 在两种环境下行为一致，均输出日志到 stderr。
 
 ## 验证安装
 

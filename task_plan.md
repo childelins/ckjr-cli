@@ -899,3 +899,61 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# Log Environment Modes - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-log-environment-modes.md
+
+## 概述
+
+通过编译期注入的环境变量，使开发环境记录 DEBUG 级别日志和完整 request/response body，生产环境仅记录 INFO 级别日志并省略 body。
+
+---
+
+## Phase 73: logging 包新增 Environment 类型和辅助函数
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (752d87c)
+- **Description**: 新增 Environment 类型（Production/Development）、ParseEnvironment()、IsDev()、currentEnv 变量
+
+---
+
+## Phase 74: 更新 Init 签名，支持环境感知的日志级别
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (8e93967)
+- **Description**: Init 新增 env 参数，根据环境设置 DEBUG/INFO 日志级别
+
+---
+
+## Phase 75: api.Client 条件记录 request/response body
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (a5316d2)
+- **Description**: DoCtx 中 request_body/response_body 改为条件记录（仅 Development 模式）
+
+---
+
+## Phase 76: cmd/root.go 接入 Environment ldflags 变量
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (d015f38)
+- **Description**: 新增 Environment var，initLogging 解析环境传递给 logging.Init
+
+---
+
+## Phase 77: 更新 CI release 构建注入 Environment
+
+- **Source**: Plan -> Task 5
+- **Status**: complete (a508f24)
+- **Description**: release.yml go build ldflags 新增 -X main.Environment=production
+
+---
+
+## 遇到的错误 (Log Environment Modes)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|
