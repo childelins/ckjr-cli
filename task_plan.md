@@ -817,3 +817,85 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# Wiki 技术文档体系 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-26-wiki-documentation.md
+
+## 概述
+
+在 wiki/ 目录下创建 7 份分步技术文档，引导新人从零学习 ckjr-cli 项目。
+
+---
+
+## Phase 65: 创建 HOME.md -- Wiki 首页和导航
+
+- **Source**: Plan -> Task 1
+- **Status**: complete
+- **Description**: 创建 wiki/HOME.md，包含项目简介、学习路径、文档目录表格
+
+---
+
+## Phase 66: 创建 install.md -- 安装指南
+
+- **Source**: Plan -> Task 2
+- **Status**: complete
+- **Description**: 创建 wiki/install.md，包含前置条件、三种安装方式、常见问题
+
+---
+
+## Phase 67: 创建 quickstart.md -- 快速开始
+
+- **Source**: Plan -> Task 3
+- **Status**: complete
+- **Description**: 创建 wiki/quickstart.md，包含配置初始化、第一个 API 调用、全局选项
+
+---
+
+## Phase 68: 创建 core-concepts.md -- 核心概念
+
+- **Source**: Plan -> Task 4
+- **Status**: complete
+- **Description**: 创建 wiki/core-concepts.md，包含 YAML 路由配置、模板系统、API 客户端、日志系统、Workflow
+
+---
+
+## Phase 69: 创建 project-structure.md -- 项目结构详解
+
+- **Source**: Plan -> Task 5
+- **Status**: complete
+- **Description**: 创建 wiki/project-structure.md，包含顶层目录、cmd/ 和 internal/ 详解、数据流图
+
+---
+
+## Phase 70: 创建 extending.md -- 扩展开发指南
+
+- **Source**: Plan -> Task 6
+- **Status**: complete
+- **Description**: 创建 wiki/extending.md，包含手写 YAML、curl 导入、编译发布流程
+
+---
+
+## Phase 71: 创建 cli-skill.md -- Claude Code Skill 集成
+
+- **Source**: Plan -> Task 7
+- **Status**: complete
+- **Description**: 创建 wiki/cli-skill.md，包含 Skill 介绍、安装方式、自发现机制
+
+---
+
+## Phase 72: 验证文档完整性
+
+- **Source**: Plan -> Task 8
+- **Status**: complete
+- **Description**: 验证所有链接有效、命令示例正确、文档语言统一
+
+---
+
+## 遇到的错误 (Wiki 技术文档)
+
+| 错误 | 尝试次数 | 解决方案 |
+|---------|---------|---------|

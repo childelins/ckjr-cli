@@ -345,3 +345,23 @@
   - route import --name-desc 正常工作
   - 生成的 YAML 文件使用 name 字段
   - 代码中无 cfg.Resource 引用
+
+## 2026-03-26 Wiki 技术文档体系
+
+### Phase 65-67: 创建 HOME.md / install.md / quickstart.md
+- Status: complete
+- 创建 wiki/HOME.md: 项目简介、学习路径图、文档目录表格
+- 创建 wiki/install.md: 前置条件、三种安装方式（一键脚本/go install/源码构建）、常见问题
+- 创建 wiki/quickstart.md: 配置初始化、第一个 API 调用（agent 模块）、全局选项、日志说明
+
+### Phase 68-70: 创建 core-concepts.md / project-structure.md / extending.md
+- Status: complete
+- 创建 wiki/core-concepts.md: YAML 路由配置、模板系统、API 客户端、日志系统、Workflow YAML
+- 创建 wiki/project-structure.md: 顶层目录、cmd/ 和 internal/ 详解、数据流图
+- 创建 wiki/extending.md: 手写 YAML、curl 导入、编译验证、CI/CD 发布流程
+
+### Phase 71-72: 创建 cli-skill.md / 验证文档完整性
+- Status: complete
+- 创建 wiki/cli-skill.md: Skill 介绍、安装方式、自发现机制、Workflow 优先策略
+- 验证全部 13 个相对链接有效
+- 验证关键命令可执行（--version, config --help, agent list --template, workflow list --help）
