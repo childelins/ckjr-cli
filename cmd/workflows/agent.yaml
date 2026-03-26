@@ -1,0 +1,64 @@
+name: agent-workflows
+description: 智能体相关工作流
+
+workflows:
+  create-agent:
+    description: 创建并配置一个完整的智能体
+    triggers:
+      - 创建智能体
+      - 新建智能体
+      - 创建一个AI助手
+    inputs:
+      - name: name
+        description: 智能体名称
+        required: true
+      - name: desc
+        description: 智能体描述/用途
+        required: true
+      - name: avatar
+        description: 头像URL
+        required: false
+        hint: 如果用户未提供，询问用户或使用用户提供的素材链接
+      - name: instructions
+        description: 智能体提示词/角色设定
+        required: true
+        hint: 根据用户描述的用途，生成包含角色定位、能力、交流规则和响应方式的完整提示词
+      - name: greeting
+        description: 开场白文案
+        required: false
+        hint: 根据智能体角色生成一条友好的开场白
+    steps:
+      - id: create
+        description: 创建智能体基本信息
+        command: agent create
+        params:
+          name: "{{inputs.name}}"
+          desc: "{{inputs.desc}}"
+          avatar: "{{inputs.avatar}}"
+        output:
+          aikbId: "response.aikbId"
+      - id: configure
+        description: 设置提示词和开场白
+        command: agent update
+        params:
+          aikbId: "{{steps.create.aikbId}}"
+          name: "{{inputs.name}}"
+          desc: "{{inputs.desc}}"
+          avatar: "{{inputs.avatar}}"
+          instructions: "{{inputs.instructions}}"
+          greeting: "{{inputs.greeting}}"
+      - id: get-link
+        description: 获取公众号端访问链接和二维码
+        command: common qrcodeImg
+        params:
+          prodId: "{{steps.create.aikbId}}"
+          prodType: ai_service
+        output:
+          url: "response.url"
+          qrcodeImg: "response.img"
+    summary: |
+      智能体创建完成：
+      - 名称：{{inputs.name}}
+      - ID：{{steps.create.aikbId}}
+      - 访问链接：{{steps.get-link.url}}
+      - 二维码：{{steps.get-link.qrcodeImg}}

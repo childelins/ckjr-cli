@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -150,5 +151,26 @@ func TestDescribe_NoInputs(t *testing.T) {
 	}
 	if !strings.Contains(result, "Step 1: run") {
 		t.Errorf("输出缺少步骤")
+	}
+}
+
+func TestParse_AgentWorkflowFile(t *testing.T) {
+	data, err := os.ReadFile("../../cmd/workflows/agent.yaml")
+	if err != nil {
+		t.Fatalf("读取 agent.yaml: %v", err)
+	}
+	cfg, err := Parse(data)
+	if err != nil {
+		t.Fatalf("解析失败: %v", err)
+	}
+	wf, ok := cfg.Workflows["create-agent"]
+	if !ok {
+		t.Fatal("缺少 create-agent workflow")
+	}
+	if len(wf.Steps) != 3 {
+		t.Errorf("Steps 长度 = %d, want 3", len(wf.Steps))
+	}
+	if len(wf.Inputs) != 5 {
+		t.Errorf("Inputs 长度 = %d, want 5", len(wf.Inputs))
 	}
 }
