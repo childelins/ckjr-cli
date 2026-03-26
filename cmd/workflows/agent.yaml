@@ -49,7 +49,7 @@ workflows:
           greeting: "{{inputs.greeting}}"
       - id: get-link
         description: 获取公众号端访问链接和二维码
-        command: common qrcodeImg
+        command: common getLink
         params:
           prodId: "{{steps.create.aikbId}}"
           prodType: ai_service

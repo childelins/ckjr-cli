@@ -1,7 +1,7 @@
 name: common
 description: 平台公共接口，可以获取公众号端访问 URL 等
 routes:
-    qrcodeImg:
+    getLink:
         method: GET
         path: /admin/common/qrcodeImg
         description: 获取公众号端访问 URL 和二维码图片
