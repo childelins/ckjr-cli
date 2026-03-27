@@ -155,7 +155,7 @@ func TestDescribe_NoInputs(t *testing.T) {
 }
 
 func TestParse_AgentWorkflowFile(t *testing.T) {
-	data, err := os.ReadFile("../../cmd/workflows/agent.yaml")
+	data, err := os.ReadFile("../../cmd/ckjr-cli/config/workflows/agent.yaml")
 	if err != nil {
 		t.Fatalf("读取 agent.yaml: %v", err)
 	}

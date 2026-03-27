@@ -25,18 +25,19 @@ cmd/
   workflow.go          # workflow list/describe 子命令
   ckjr-cli/
     main.go            # 独立的 main 包，供 go install 使用
-  routes/              # 嵌入的 YAML 路由配置
-    agent.yaml         # 智能体模块（create/delete/get/list/update）
-    common.yaml        # 公共接口模块（getLink）
-  workflows/           # 嵌入的 Workflow YAML 配置
-    agent.yaml         # 智能体工作流（create-agent）
+    embed.go           # go:embed all:config，嵌入 YAML 配置
+    config/            # 嵌入的 YAML 配置文件
+      routes/
+        agent.yaml     # 智能体模块（create/delete/get/list/update）
+        common.yaml    # 公共接口模块（getLink）
+      workflows/
+        agent.yaml     # 智能体工作流（create-agent）
 ```
 
 `cmd/root.go` 的核心逻辑：
 
 ```go
-//go:embed routes
-var routesFS embed.FS
+var yamlFS *configyaml.FS
 
 func init() {
     // 注册全局 flag
@@ -50,13 +51,15 @@ func init() {
     rootCmd.AddCommand(configCmd)
     rootCmd.AddCommand(routeCmd)
     rootCmd.AddCommand(workflowCmd)
+}
 
-    // 从 embed 的 YAML 文件动态生成命令
-    registerRouteCommands()
+func Execute() {
+    registerRouteCommands()  // 从 yamlFS 加载并生成命令
+    rootCmd.Execute()
 }
 ```
 
-`registerRouteCommands()` 遍历 `routes/` 目录下的 `.yaml` 文件，解析后调用 `cmdgen.BuildCommand()` 生成 cobra 命令。
+`registerRouteCommands()` 通过 `yamlFS.LoadRoutes()` 读取嵌入的 YAML 文件，解析后调用 `cmdgen.BuildCommand()` 生成 cobra 命令。
 
 ## internal/ 目录详解
 
@@ -92,9 +95,9 @@ internal/
 从用户输入到 API 调用的完整数据流：
 
 ```
-YAML 配置文件 (cmd/routes/*.yaml)
+YAML 配置文件 (cmd/ckjr-cli/config/routes/*.yaml)
     |
-    v  (go:embed + ReadFile)
+    v  (go:embed -> configyaml.FS -> LoadRoutes())
 router.Parse() -> RouteConfig
     |
     v
