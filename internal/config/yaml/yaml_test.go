@@ -7,10 +7,10 @@ import (
 
 func TestLoadRoutes(t *testing.T) {
 	memFS := fstest.MapFS{
-		"config/routes/agent.yaml":  {Data: []byte("name: agent\ndescription: test\nroutes: {}")},
-		"config/routes/common.yaml": {Data: []byte("name: common\ndescription: common\nroutes: {}")},
-		"config/routes/readme.txt":  {Data: []byte("ignored")},
-		"config/routes/sub/.keep":   {Data: []byte("")},
+		"routes/agent.yaml":  {Data: []byte("name: agent\ndescription: test\nroutes: {}")},
+		"routes/common.yaml": {Data: []byte("name: common\ndescription: common\nroutes: {}")},
+		"routes/readme.txt":  {Data: []byte("ignored")},
+		"routes/sub/.keep":   {Data: []byte("")},
 	}
 	loader := New(memFS)
 	files, err := loader.LoadRoutes()
@@ -33,7 +33,7 @@ func TestLoadRoutes(t *testing.T) {
 
 func TestLoadRoutes_EmptyDir(t *testing.T) {
 	memFS := fstest.MapFS{
-		"config/routes/readme.txt": {Data: []byte("ignored")},
+		"routes/readme.txt": {Data: []byte("ignored")},
 	}
 	loader := New(memFS)
 	files, err := loader.LoadRoutes()
@@ -56,8 +56,8 @@ func TestLoadRoutes_NonexistentDir(t *testing.T) {
 
 func TestLoadWorkflows(t *testing.T) {
 	memFS := fstest.MapFS{
-		"config/workflows/agent.yaml": {Data: []byte("name: agent\nworkflows: {}")},
-		"config/workflows/note.txt":   {Data: []byte("ignored")},
+		"workflows/agent.yaml": {Data: []byte("name: agent\nworkflows: {}")},
+		"workflows/note.txt":   {Data: []byte("ignored")},
 	}
 	loader := New(memFS)
 	files, err := loader.LoadWorkflows()

@@ -16,14 +16,14 @@ func New(embedFS fs.FS) *FS {
 	return &FS{fs: embedFS}
 }
 
-// LoadRoutes 读取 config/routes/ 下所有 .yaml 文件，返回文件名到内容的映射
+// LoadRoutes 读取 routes/ 下所有 .yaml 文件，返回文件名到内容的映射
 func (f *FS) LoadRoutes() (map[string][]byte, error) {
-	return f.loadDir("config/routes")
+	return f.loadDir("routes")
 }
 
-// LoadWorkflows 读取 config/workflows/ 下所有 .yaml 文件，返回文件名到内容的映射
+// LoadWorkflows 读取 workflows/ 下所有 .yaml 文件，返回文件名到内容的映射
 func (f *FS) LoadWorkflows() (map[string][]byte, error) {
-	return f.loadDir("config/workflows")
+	return f.loadDir("workflows")
 }
 
 func (f *FS) loadDir(dir string) (map[string][]byte, error) {
