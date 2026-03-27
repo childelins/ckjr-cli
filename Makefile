@@ -19,6 +19,12 @@ PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 version:
 	@echo $(VERSION)
 
+# 仅当前平台编译
+build-local:
+	@mkdir -p $(BUILD_DIR)
+	go build -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_PATH)
+	@echo "Built $(BUILD_DIR)/$(BINARY_NAME) ($(VERSION))"
+
 # 清理构建产物
 clean:
 	rm -rf $(BUILD_DIR)
