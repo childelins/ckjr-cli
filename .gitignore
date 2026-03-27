@@ -24,6 +24,7 @@ vendor/
 # IDE
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 *~
@@ -49,3 +50,4 @@ logs/
 .spf-state.json
 .spf-brainstorm-session.json
 .openviking/
+ov.conf
