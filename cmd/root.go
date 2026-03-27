@@ -9,10 +9,14 @@ import (
 
 	"github.com/childelins/ckjr-cli/internal/api"
 	"github.com/childelins/ckjr-cli/internal/cmdgen"
-	"github.com/childelins/ckjr-cli/internal/config"
+	internalconfig "github.com/childelins/ckjr-cli/internal/config"
+	configyaml "github.com/childelins/ckjr-cli/internal/config/yaml"
 	"github.com/childelins/ckjr-cli/internal/logging"
 	"github.com/childelins/ckjr-cli/internal/router"
-	configyaml "github.com/childelins/ckjr-cli/internal/config/yaml"
+
+	configcmd "github.com/childelins/ckjr-cli/cmd/config"
+	routecmd "github.com/childelins/ckjr-cli/cmd/route"
+	workflowcmd "github.com/childelins/ckjr-cli/cmd/workflow"
 )
 
 var yamlFS *configyaml.FS
@@ -23,8 +27,8 @@ func SetYAMLFS(fs *configyaml.FS) {
 }
 
 var (
-	version      = "dev"
-	environment  = "production"
+	version     = "dev"
+	environment = "production"
 )
 
 // SetVersion 由 main 包调用，通过 ldflags 注入版本号
@@ -48,29 +52,19 @@ var rootCmd = &cobra.Command{
 // Execute 执行根命令
 func Execute() {
 	registerRouteCommands()
+	rootCmd.AddCommand(workflowcmd.NewCommand(yamlFS))
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
-	// 添加 --pretty 全局 flag
 	rootCmd.PersistentFlags().Bool("pretty", false, "格式化 JSON 输出")
-
-	// 添加 --verbose 全局 flag
 	rootCmd.PersistentFlags().Bool("verbose", false, "显示详细调试信息")
-
-	// 初始化日志系统
 	cobra.OnInitialize(initLogging)
 
-	// 注册 config 命令
-	rootCmd.AddCommand(configCmd)
-
-	// 注册 route 命令
-	rootCmd.AddCommand(routeCmd)
-
-	// 注册 workflow 命令
-	rootCmd.AddCommand(workflowCmd)
+	rootCmd.AddCommand(configcmd.NewCommand())
+	rootCmd.AddCommand(routecmd.NewCommand())
 }
 
 func initLogging() {
@@ -113,10 +107,9 @@ func registerRouteCommands() {
 
 // createClient 创建 API 客户端
 func createClient() (*api.Client, error) {
-	cfg, err := config.Load()
+	cfg, err := internalconfig.Load()
 	if err != nil {
 		return nil, fmt.Errorf("未找到配置文件，请先执行 ckjr-cli config init")
 	}
-
 	return api.NewClient(cfg.BaseURL, cfg.APIKey), nil
 }

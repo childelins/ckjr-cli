@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	configyaml "github.com/childelins/ckjr-cli/internal/config/yaml"
+	workflowcmd "github.com/childelins/ckjr-cli/cmd/workflow"
 )
 
 //go:embed all:ckjr-cli/routes all:ckjr-cli/workflows
@@ -18,5 +19,6 @@ func TestMain(m *testing.M) {
 	}
 	yamlFS = configyaml.New(subFS)
 	registerRouteCommands()
+	rootCmd.AddCommand(workflowcmd.NewCommand(yamlFS))
 	m.Run()
 }
