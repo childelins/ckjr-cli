@@ -35,33 +35,6 @@ detect_arch() {
     esac
 }
 
-# 检测 Go 环境
-has_go() {
-    command -v go &> /dev/null
-}
-
-# Go install 方式安装
-install_via_go() {
-    info "Installing via go install..."
-
-    # 配置私有仓库
-    export GOPRIVATE="github.com/${REPO%%/*}/*"
-
-    # 检测认证方式
-    if [ -n "$GITHUB_TOKEN" ]; then
-        info "Using GITHUB_TOKEN for authentication"
-        git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-    elif [ -f "$HOME/.ssh/id_rsa" ] || [ -f "$HOME/.ssh/id_ed25519" ]; then
-        info "Using SSH key for authentication"
-        git config --global url."git@github.com:".insteadOf "https://github.com/"
-    else
-        warn "No authentication configured. Private repo access may fail."
-    fi
-
-    go install "github.com/${REPO}/cmd/ckjr-cli@latest"
-    info "Installed via go install"
-}
-
 # 下载 Release 二进制
 install_via_release() {
     local os=$(detect_os)
@@ -166,18 +139,6 @@ install_via_release() {
 # 主函数
 main() {
     info "Installing $BINARY_NAME from $REPO"
-
-    # 优先使用 go install（如果有 Go 环境）
-    if has_go; then
-        info "Go environment detected"
-        read -p "Use 'go install' method? (y/n, default: y): " use_go
-        if [ -z "$use_go" ] || [ "$use_go" = "y" ]; then
-            install_via_go
-            exit 0
-        fi
-    fi
-
-    # 下载预编译二进制
     install_via_release
 }
 
