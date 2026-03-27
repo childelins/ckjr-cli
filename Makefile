@@ -49,6 +49,39 @@ build: clean
 	done
 	@echo "Build complete. Artifacts in $(BUILD_DIR)/"
 
+# 前置检查：gh CLI 已登录
+check-gh:
+	@gh auth status >/dev/null 2>&1 || (echo "Error: gh CLI not authenticated. Run 'gh auth login'" && exit 1)
+
+# 前置检查：工作区干净
+check-clean:
+	@test -z "$$(git status --porcelain)" || (echo "Error: working directory not clean. Commit or stash changes first." && exit 1)
+
+# 前置检查：github remote 已配置
+check-github-remote:
+	@git remote get-url $(GITHUB_REMOTE) >/dev/null 2>&1 || \
+		(echo "Error: git remote '$(GITHUB_REMOTE)' not found." && \
+		 echo "Run: git remote add $(GITHUB_REMOTE) git@github.com:$(GITHUB_REPO).git" && \
+		 exit 1)
+
+# 全自动发布
+release: check-gh check-clean check-github-remote
+	@if [ "$(VERSION)" = "dev" ]; then \
+		echo "Error: VERSION is required. Usage: make release VERSION=v0.1.0"; \
+		exit 1; \
+	fi
+	@if git rev-parse "$(VERSION)" >/dev/null 2>&1; then \
+		echo "Error: tag $(VERSION) already exists"; \
+		exit 1; \
+	fi
+	@echo "Releasing $(BINARY_NAME) $(VERSION) to GitHub ($(GITHUB_REPO))..."
+	git tag $(VERSION)
+	git push $(GITHUB_REMOTE) $(VERSION)
+	$(MAKE) build VERSION=$(VERSION)
+	gh release create $(VERSION) $(BUILD_DIR)/*.tar.gz $(BUILD_DIR)/*.zip \
+		--repo $(GITHUB_REPO) --generate-notes
+	@echo "Release $(VERSION) published to https://github.com/$(GITHUB_REPO)/releases/tag/$(VERSION)"
+
 # 清理构建产物
 clean:
 	rm -rf $(BUILD_DIR)
