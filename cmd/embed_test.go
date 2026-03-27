@@ -8,7 +8,7 @@ import (
 	configyaml "github.com/childelins/ckjr-cli/internal/config/yaml"
 )
 
-//go:embed all:ckjr-cli/config
+//go:embed all:ckjr-cli/routes all:ckjr-cli/workflows
 var testEmbedFS embed.FS
 
 func TestMain(m *testing.M) {
