@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,10 +12,15 @@ import (
 	"github.com/childelins/ckjr-cli/internal/config"
 	"github.com/childelins/ckjr-cli/internal/logging"
 	"github.com/childelins/ckjr-cli/internal/router"
+	configyaml "github.com/childelins/ckjr-cli/internal/config/yaml"
 )
 
-//go:embed routes
-var routesFS embed.FS
+var yamlFS *configyaml.FS
+
+// SetYAMLFS 设置 YAML 配置加载器，由 main 包调用
+func SetYAMLFS(fs *configyaml.FS) {
+	yamlFS = fs
+}
 
 var (
 	version      = "dev"
@@ -43,6 +47,7 @@ var rootCmd = &cobra.Command{
 
 // Execute 执行根命令
 func Execute() {
+	registerRouteCommands()
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -66,9 +71,6 @@ func init() {
 
 	// 注册 workflow 命令
 	rootCmd.AddCommand(workflowCmd)
-
-	// 注册动态生成的命令
-	registerRouteCommands()
 }
 
 func initLogging() {
@@ -86,38 +88,24 @@ func initLogging() {
 }
 
 func registerRouteCommands() {
-	// 读取 embed 的路由文件
-	entries, err := routesFS.ReadDir("routes")
+	if yamlFS == nil {
+		fmt.Fprintf(os.Stderr, "YAML 文件系统未初始化\n")
+		return
+	}
+
+	files, err := yamlFS.LoadRoutes()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "读取路由目录失败: %v\n", err)
 		return
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		// 只处理 .yaml 文件
-		name := entry.Name()
-		if len(name) < 5 || name[len(name)-5:] != ".yaml" {
-			continue
-		}
-
-		// 读取并解析路由配置
-		data, err := routesFS.ReadFile("routes/" + name)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "读取路由文件 %s 失败: %v\n", name, err)
-			continue
-		}
-
+	for name, data := range files {
 		cfg, err := router.Parse(data)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "解析路由文件 %s 失败: %v\n", name, err)
 			continue
 		}
 
-		// 生成命令并注册
 		cmd := cmdgen.BuildCommand(cfg, createClient)
 		rootCmd.AddCommand(cmd)
 	}

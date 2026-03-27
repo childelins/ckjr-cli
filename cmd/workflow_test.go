@@ -46,7 +46,8 @@ func TestWorkflowDescribe(t *testing.T) {
 		"== 执行步骤 ==",
 		"agent create",
 		"agent update",
-		"common qrcodeImg",
+		"common getLink",
+		"qrcodeImg",
 		"== 完成摘要 ==",
 	}
 	for _, check := range checks {

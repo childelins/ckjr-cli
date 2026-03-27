@@ -2,18 +2,12 @@ package cmd
 
 import (
 	"bytes"
-	"embed"
 	"encoding/json"
 	"fmt"
-	"io/fs"
-	"strings"
 
 	"github.com/childelins/ckjr-cli/internal/workflow"
 	"github.com/spf13/cobra"
 )
-
-//go:embed workflows
-var workflowsFS embed.FS
 
 var workflowCmd = &cobra.Command{
 	Use:   "workflow",
@@ -86,23 +80,20 @@ var workflowDescribeCmd = &cobra.Command{
 }
 
 func loadAllWorkflows() ([]*workflow.Config, error) {
-	entries, err := fs.ReadDir(workflowsFS, "workflows")
+	if yamlFS == nil {
+		return nil, fmt.Errorf("YAML 文件系统未初始化")
+	}
+
+	files, err := yamlFS.LoadWorkflows()
 	if err != nil {
 		return nil, err
 	}
 
 	var configs []*workflow.Config
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-		data, err := workflowsFS.ReadFile("workflows/" + entry.Name())
-		if err != nil {
-			return nil, err
-		}
+	for name, data := range files {
 		cfg, err := workflow.Parse(data)
 		if err != nil {
-			return nil, fmt.Errorf("解析 %s 失败: %w", entry.Name(), err)
+			return nil, fmt.Errorf("解析 %s 失败: %w", name, err)
 		}
 		configs = append(configs, cfg)
 	}
