@@ -1,0 +1,78 @@
+package route
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/childelins/ckjr-cli/internal/router"
+)
+
+func TestRouteCmd_IsHidden(t *testing.T) {
+	cmd := NewCommand()
+	if !cmd.Hidden {
+		t.Error("routeCmd should be hidden")
+	}
+}
+
+func TestRouteImport_Stdin_AppendToExisting(t *testing.T) {
+	dir := t.TempDir()
+	yamlPath := filepath.Join(dir, "agent.yaml")
+
+	initial := `name: agent
+description: AI智能体管理
+routes:
+    list:
+        method: POST
+        path: /admin/list
+        description: 获取列表
+`
+	os.WriteFile(yamlPath, []byte(initial), 0644)
+
+	curl := `curl 'https://kpapi-cs.ckjr001.com/api/admin/aiCreationCenter/modifyApp' -H 'content-type: application/json' --data-raw '{"name":"test","aikbId":3550}'`
+
+	err := runImport(curl, yamlPath, "update", "")
+	if err != nil {
+		t.Fatalf("runImport() error = %v", err)
+	}
+
+	data, _ := os.ReadFile(yamlPath)
+	cfg, err := router.Parse(data)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if len(cfg.Routes) != 2 {
+		t.Errorf("Routes count = %d, want 2", len(cfg.Routes))
+	}
+	route, ok := cfg.Routes["update"]
+	if !ok {
+		t.Fatal("update route not found")
+	}
+	if route.Method != "POST" {
+		t.Errorf("Method = %q", route.Method)
+	}
+}
+
+func TestRouteImport_CreateNewFile(t *testing.T) {
+	dir := t.TempDir()
+	yamlPath := filepath.Join(dir, "order.yaml")
+
+	curl := `curl 'https://example.com/api/admin/order/list' --data-raw '{"page":1,"limit":10}'`
+
+	err := runImport(curl, yamlPath, "list", "订单管理")
+	if err != nil {
+		t.Fatalf("runImport() error = %v", err)
+	}
+
+	data, _ := os.ReadFile(yamlPath)
+	cfg, err := router.Parse(data)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if cfg.Name != "order" {
+		t.Errorf("Name = %q", cfg.Name)
+	}
+	if _, ok := cfg.Routes["list"]; !ok {
+		t.Error("list route not found")
+	}
+}
