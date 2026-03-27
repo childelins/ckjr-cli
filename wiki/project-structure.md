@@ -19,10 +19,18 @@ ckjr-cli/
 
 ```
 cmd/
-  root.go              # 根命令，注册全局 flag 和子命令
-  config.go            # config init/set/show 子命令
-  route.go             # route import 命令（隐藏命令）
-  workflow.go          # workflow list/describe 子命令
+  root.go              # 根命令，注册全局 flag，集成子包
+  root_test.go         # 根命令测试
+  embed_test.go        # 测试辅助，嵌入 YAML 配置并初始化 yamlFS
+  config/
+    config.go          # config init/set/show 子命令
+    config_test.go
+  route/
+    route.go           # route import 命令（隐藏命令）
+    route_test.go
+  workflow/
+    workflow.go        # workflow list/describe 子命令
+    workflow_test.go
   ckjr-cli/
     main.go            # 独立的 main 包，供 go install 使用
     embed.go           # go:embed all:routes all:workflows，嵌入 YAML 配置
@@ -39,21 +47,18 @@ cmd/
 var yamlFS *configyaml.FS
 
 func init() {
-    // 注册全局 flag
     rootCmd.PersistentFlags().Bool("pretty", false, "格式化 JSON 输出")
     rootCmd.PersistentFlags().Bool("verbose", false, "显示详细调试信息")
-
-    // 初始化日志系统
     cobra.OnInitialize(initLogging)
 
-    // 注册静态子命令
-    rootCmd.AddCommand(configCmd)
-    rootCmd.AddCommand(routeCmd)
-    rootCmd.AddCommand(workflowCmd)
+    // 注册静态子命令（子包工厂函数）
+    rootCmd.AddCommand(configcmd.NewCommand())
+    rootCmd.AddCommand(routecmd.NewCommand())
 }
 
 func Execute() {
-    registerRouteCommands()  // 从 yamlFS 加载并生成命令
+    registerRouteCommands()  // 从 yamlFS 加载并生成动态路由命令
+    rootCmd.AddCommand(workflowcmd.NewCommand(yamlFS))
     rootCmd.Execute()
 }
 ```

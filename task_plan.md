@@ -999,3 +999,166 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |---------|---------|---------|
+
+---
+---
+
+# YAML 配置文件迁移到 config/ - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-27-move-yaml-to-config.md
+
+## 概述
+
+将 cmd/routes/ 和 cmd/workflows/ 下的 YAML 文件迁移到 cmd/ckjr-cli/config/，并通过 internal/config/yaml 包集中管理加载逻辑。
+
+---
+
+## Phase 81: 创建 internal/config/yaml 包
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (c1cff6f)
+- **Description**: TDD 创建 internal/config/yaml 包，5 个测试覆盖 routes/workflows 加载、空目录、不存在目录
+
+---
+
+## Phase 82: 迁移 YAML 文件 + 创建 embed.go
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (2d0060c)
+- **Description**: 复制 YAML 到 cmd/ckjr-cli/config/，创建 embed.go（go:embed all:config）
+
+---
+
+## Phase 83: 修改 cmd/ 包使用 yaml.FS
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (3a52918)
+- **Description**: cmd/root.go 和 cmd/workflow.go 移除直接 embed，改用 yamlFS。cmd/ckjr-cli/main.go 注入 configFS
+
+---
+
+## Phase 84: 更新测试和文档路径
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (d134455)
+- **Description**: 更新 workflow_test.go、wiki/core-concepts.md、extending.md、project-structure.md 路径引用
+
+---
+
+## Phase 85: 清理旧文件
+
+- **Source**: Plan -> Task 5
+- **Status**: complete (606c51c)
+- **Description**: 删除 cmd/routes/ 和 cmd/workflows/ 下的旧 YAML 文件和空目录
+
+---
+
+## 遇到的错误 (YAML 迁移)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
+| fs.FS 没有 ReadFile 方法 | 1 | 改用 fs.ReadFile(f.fs, path) |
+| go:embed 放根目录无法编译（实际 main 在 cmd/ckjr-cli/） | 1 | 将 config/ 放在 cmd/ckjr-cli/ 下，embed.go 同目录 |
+| 测试中 yamlFS 为 nil（init 先于 TestMain 执行） | 1 | registerRouteCommands() 从 init() 移到 Execute()，测试通过 TestMain 设置 yamlFS |
+| embed_test.go 路径不匹配（ckjr-cli/config/ vs config/） | 1 | 使用 fs.Sub(testEmbedFS, "ckjr-cli") 对齐路径前缀 |
+| TestWorkflowDescribe 断言 "common qrcodeImg" | 1 | 修复为两个独立检查 "common getLink" 和 "qrcodeImg" |
+
+---
+---
+
+# cmd 目录结构重组 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-27-restructure-cmd-directories.md
+
+## 概述
+
+将 cmd/ 平铺文件拆分为子包 + 精简 YAML 嵌入路径。Part A: YAML 路径精简（config/routes -> routes），Part B: cmd 子包拆分。
+
+---
+
+## Phase 86: 更新 internal/config/yaml 加载路径
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (c0a826f)
+- **Description**: 精简 YAML 加载路径，从 config/routes 改为 routes，config/workflows 改为 workflows
+
+---
+
+## Phase 87: 迁移 YAML 物理文件 + 更新 embed 指令
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (6a6f9aa)
+- **Description**: 将 YAML 文件从 config/ 子目录移到 routes/ 和 workflows/，更新 embed 指令
+
+---
+
+## Phase 88: 更新 workflow_test.go 路径 + wiki 文档
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (2aec040)
+- **Description**: 更新 workflow_test.go 中的 os.ReadFile 路径和 wiki 文档中的路径引用
+
+---
+
+## Phase 89: 提取辅助函数到 internal/router
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (8ad4d58)
+- **Description**: 将 cmd/route.go 中的 inferRouteName/inferNameFromPath 提取到 internal/router/infer.go
+
+---
+
+## Phase 90: 创建 cmd/config/ 子包
+
+- **Source**: Plan -> Task 5
+- **Status**: complete (f55d920)
+- **Description**: 将 cmd/config.go 迁移为 cmd/config/ 子包，暴露 NewCommand() 工厂函数
+
+---
+
+## Phase 91: 创建 cmd/route/ 子包
+
+- **Source**: Plan -> Task 6
+- **Status**: complete (cb9c866)
+- **Description**: 将 cmd/route.go 迁移为 cmd/route/ 子包，使用 router.InferRouteName 替代内部函数
+
+---
+
+## Phase 92: 创建 cmd/workflow/ 子包
+
+- **Source**: Plan -> Task 7
+- **Status**: complete (c7a3663)
+- **Description**: 将 cmd/workflow.go 迁移为 cmd/workflow/ 子包，NewCommand 接受 yamlFS 参数
+
+---
+
+## Phase 93: 重构 cmd/root.go 集成子包
+
+- **Source**: Plan -> Task 8
+- **Status**: complete (f3666d7)
+- **Description**: 移除 root.go 中的子命令定义，改为 import 子包注册
+
+---
+
+## Phase 94: 删除旧文件
+
+- **Source**: Plan -> Task 9
+- **Status**: complete (6b6f353)
+- **Description**: 删除已迁移的旧文件 config.go/route.go/workflow.go 及其测试文件
+
+---
+
+## Phase 95: 最终验证
+
+- **Source**: Plan -> Task 10
+- **Status**: complete (final)
+- **Description**: 全量测试 (81 tests)、go vet 无警告、编译通过、目录结构确认
+
+---
+
+## 遇到的错误 (cmd 目录重组)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
+| workflow 测试 YAML 使用简单字符串而非 Step 结构体 | 1 | 修复测试 YAML 使用完整的 Step 结构（id/description/command/params） |
+| workflow 命令未在测试中注册（Execute() 延迟注册） | 1 | 在 TestMain 中显式调用 rootCmd.AddCommand(workflowcmd.NewCommand(yamlFS)) |

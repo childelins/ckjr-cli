@@ -423,3 +423,98 @@
 - Status: complete (d1eb851)
 - 新增 TestDefaultVersion 验证 version 默认值 "dev"
 - 新增 TestDefaultEnvironment 验证 environment 默认值 "production"
+
+## 2026-03-27 YAML 配置文件迁移到 config/
+
+### Phase 81: 创建 internal/config/yaml 包
+- Status: complete (c1cff6f)
+- 创建 internal/config/yaml 包
+- New() 接受 fs.FS，提供 LoadRoutes()/LoadWorkflows() 方法
+- 5 个测试：routes 加载、空目录、不存在目录、workflows 加载、workflows 不存在目录
+
+### Phase 82: 迁移 YAML 文件 + 创建 embed.go
+- Status: complete (2d0060c)
+- 复制 cmd/routes/*.yaml 和 cmd/workflows/*.yaml 到 cmd/ckjr-cli/config/
+- 创建 cmd/ckjr-cli/embed.go（go:embed all:config）
+- 由于 go:embed 限制，config 目录放在 cmd/ckjr-cli/ 下（非根目录）
+
+### Phase 83: 修改 cmd/ 包使用 yaml.FS
+- Status: complete (3a52918)
+- cmd/root.go: 移除 //go:embed routes 和 routesFS，新增 yamlFS + SetYAMLFS()
+- cmd/workflow.go: 移除 //go:embed workflows 和 workflowsFS，loadAllWorkflows() 改用 yamlFS
+- cmd/ckjr-cli/main.go: init() 调用 cmd.SetYAMLFS(configyaml.New(configFS))
+- cmd/embed_test.go: 测试辅助，使用 //go:embed + fs.Sub 初始化 yamlFS
+- registerRouteCommands() 从 init() 移到 Execute()，解决测试初始化顺序问题
+- 修复 TestWorkflowDescribe 预存断言 bug
+- 全部 67 个测试通过
+
+### Phase 84: 更新测试和文档路径
+- Status: complete (d134455)
+- internal/workflow/workflow_test.go: 路径更新为 cmd/ckjr-cli/config/workflows/agent.yaml
+- wiki/core-concepts.md: cmd/routes/ -> cmd/ckjr-cli/config/routes/，cmd/workflows/ -> cmd/ckjr-cli/config/workflows/
+- wiki/extending.md: cmd/routes/ -> cmd/ckjr-cli/config/routes/（4 处）
+- wiki/project-structure.md: 更新目录结构和数据流描述
+
+### Phase 85: 清理旧文件
+- Status: complete (606c51c)
+- 删除 cmd/routes/agent.yaml, cmd/routes/common.yaml, cmd/workflows/agent.yaml
+- 删除空目录 cmd/routes/, cmd/workflows/
+- 全量测试通过
+
+## 2026-03-27 cmd 目录结构重组
+
+### Phase 86: 更新 internal/config/yaml 加载路径
+- Status: complete (c0a826f)
+- yaml.go: LoadRoutes 路径从 config/routes 改为 routes，LoadWorkflows 从 config/workflows 改为 workflows
+- yaml_test.go: MapFS key 从 config/routes/... 改为 routes/...
+
+### Phase 87: 迁移 YAML 物理文件 + 更新 embed 指令
+- Status: complete (6a6f9aa)
+- 移动 cmd/ckjr-cli/config/routes/*.yaml 到 cmd/ckjr-cli/routes/
+- 移动 cmd/ckjr-cli/config/workflows/*.yaml 到 cmd/ckjr-cli/workflows/
+- embed.go: go:embed all:config 改为 go:embed all:routes all:workflows
+- embed_test.go: go:embed all:ckjr-cli/config 改为 go:embed all:ckjr-cli/routes all:ckjr-cli/workflows
+- 删除空 cmd/ckjr-cli/config/ 目录
+
+### Phase 88: 更新 workflow_test.go 路径 + wiki 文档
+- Status: complete (2aec040)
+- internal/workflow/workflow_test.go: 路径更新为 cmd/ckjr-cli/workflows/agent.yaml
+- wiki 文档: 所有 cmd/ckjr-cli/config/routes/ 和 config/workflows/ 路径更新
+
+### Phase 89: 提取辅助函数到 internal/router
+- Status: complete (8ad4d58)
+- 创建 internal/router/infer.go: InferRouteName, InferNameFromPath (导出函数)
+- 创建 internal/router/infer_test.go: 14 个表驱动测试
+
+### Phase 90: 创建 cmd/config/ 子包
+- Status: complete (f55d920)
+- cmd/config/config.go: NewCommand() 工厂函数，包含 init/set/show 子命令
+- cmd/config/config_test.go: 6 个测试（使用 internalconfig 别名避免包名冲突）
+
+### Phase 91: 创建 cmd/route/ 子包
+- Status: complete (cb9c866)
+- cmd/route/route.go: NewCommand() 工厂函数，使用 router.InferRouteName
+- cmd/route/route_test.go: 3 个测试
+
+### Phase 92: 创建 cmd/workflow/ 子包
+- Status: complete (c7a3663)
+- cmd/workflow/workflow.go: NewCommand(yamlFS) 工厂函数
+- cmd/workflow/workflow_test.go: 3 个测试（使用 MapFS mock）
+
+### Phase 93: 重构 cmd/root.go 集成子包
+- Status: complete (f3666d7)
+- root.go: 移除 configCmd/routeCmd/workflowCmd 引用，改为 import 子包
+- init() 注册 configcmd.NewCommand() 和 routecmd.NewCommand()
+- Execute() 注册 workflowcmd.NewCommand(yamlFS)
+- embed_test.go: TestMain 中显式注册 workflow 子命令
+
+### Phase 94: 删除旧文件
+- Status: complete (6b6f353)
+- 删除 cmd/config.go, config_test.go, route.go, route_test.go, workflow.go, workflow_test.go (6 个文件)
+
+### Phase 95: 最终验证
+- Status: complete (final)
+- 全量测试: 81 tests, 15 packages, ALL PASS
+- go vet: 无警告
+- go build: 编译成功
+- 目录结构: 符合计划预期
