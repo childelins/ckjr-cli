@@ -7,11 +7,10 @@
 ## 快速安装
 
 ```bash
-export GITHUB_TOKEN=ghp_xxx
-curl -fsSL https://raw.githubusercontent.com/childelins/ckjr-cli/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/childelins/ckjr-cli/master/install.sh | bash
 ```
 
-更多安装方式（go install / 源码构建 / Fork 自定义）见 [安装指南](wiki/install.md)。
+更多安装方式（源码构建 / Fork 自定义）见 [安装指南](wiki/install.md)。
 
 ## 快速开始
 
@@ -34,8 +33,11 @@ ckjr-cli agent get '{"aikbId":"xxx"}'  # 查询详情
 | [扩展开发](wiki/extending.md) | 手写 YAML / curl 导入、编译发布 |
 | [Claude Code Skill](wiki/cli-skill.md) | AI Skill 安装与使用 |
 
-## 测试
+## 开发
 
 ```bash
-go test ./... -v
+make build-local          # 当前平台编译
+make build VERSION=v0.1.0 # 多平台交叉编译
+make test                 # 运行测试
+make release VERSION=v0.1.0 # 一键发布到 GitHub Release
 ```
