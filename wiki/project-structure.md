@@ -25,13 +25,12 @@ cmd/
   workflow.go          # workflow list/describe 子命令
   ckjr-cli/
     main.go            # 独立的 main 包，供 go install 使用
-    embed.go           # go:embed all:config，嵌入 YAML 配置
-    config/            # 嵌入的 YAML 配置文件
-      routes/
-        agent.yaml     # 智能体模块（create/delete/get/list/update）
-        common.yaml    # 公共接口模块（getLink）
-      workflows/
-        agent.yaml     # 智能体工作流（create-agent）
+    embed.go           # go:embed all:routes all:workflows，嵌入 YAML 配置
+    routes/
+      agent.yaml       # 智能体模块（create/delete/get/list/update）
+      common.yaml      # 公共接口模块（getLink）
+    workflows/
+      agent.yaml       # 智能体工作流（create-agent）
 ```
 
 `cmd/root.go` 的核心逻辑：
@@ -95,7 +94,7 @@ internal/
 从用户输入到 API 调用的完整数据流：
 
 ```
-YAML 配置文件 (cmd/ckjr-cli/config/routes/*.yaml)
+YAML 路由配置 (cmd/ckjr-cli/routes/*.yaml)
     |
     v  (go:embed -> configyaml.FS -> LoadRoutes())
 router.Parse() -> RouteConfig

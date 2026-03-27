@@ -6,7 +6,7 @@
 
 ckjr-cli 的核心思想是用 YAML 声明式配置替代手写 Cobra 命令代码。添加一个新的 API 模块只需编写一个 YAML 文件，无需修改 Go 代码。
 
-以 `cmd/ckjr-cli/config/routes/agent.yaml` 为例：
+以 `cmd/ckjr-cli/routes/agent.yaml` 为例：
 
 ```yaml
 name: agent                       # 资源名，映射为 CLI 子命令
@@ -101,9 +101,9 @@ req.Header.Set("Content-Type", "application/json")
 
 ## Workflow YAML
 
-`cmd/ckjr-cli/config/workflows/` 目录存放多步骤工作流定义，让 AI 一次性获取复杂任务的完整编排。
+`cmd/ckjr-cli/workflows/` 目录存放多步骤工作流定义，让 AI 一次性获取复杂任务的完整编排。
 
-以 `cmd/ckjr-cli/config/workflows/agent.yaml` 中的 `create-agent` 工作流为例：
+以 `cmd/ckjr-cli/workflows/agent.yaml` 中的 `create-agent` 工作流为例：
 
 ```yaml
 workflows:
