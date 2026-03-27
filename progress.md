@@ -518,3 +518,34 @@
 - go vet: 无警告
 - go build: 编译成功
 - 目录结构: 符合计划预期
+
+## 2026-03-27 本地多平台构建与 GitHub Release 发布
+
+### Task 1: 创建 Makefile 基础框架
+- Status: complete (818678b)
+- 创建 Makefile，包含 BINARY_NAME/BUILD_DIR/CMD_PATH/VERSION/LDFLAGS 等变量
+- 实现 version 目标（输出 git tag）和 clean 目标（清理 bin/）
+- 验证: make version 输出 v0.0.1，make clean 无错误
+
+### Task 2: 添加 build-local 目标
+- Status: complete (918fefd)
+- 添加 build-local 目标，编译当前平台二进制到 bin/ckjr-cli
+- 验证: 构建成功，bin/ckjr-cli --help 正常输出
+
+### Task 3: 添加 build 目标（多平台交叉编译）
+- Status: complete (9521072)
+- 添加 build 目标支持 5 平台: linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64
+- Windows 使用 zip 打包，其他使用 tar.gz
+- 验证: 5 个压缩包生成，文件名兼容 install.sh 正则，解压后二进制可执行
+
+### Task 4: 添加前置检查和 release 目标
+- Status: complete (9ec4cc2)
+- 添加 check-gh（gh CLI 认证）、check-clean（工作区干净）、check-github-remote（remote 已配置）
+- 添加 release 目标: check-gh + check-clean + check-github-remote + tag + push + build + gh release create
+- 验证: check-gh/check-github-remote 防护正常（未登录/未配置时报错退出）
+
+### Task 5: 配置 GitHub remote 并端到端验证
+- Status: complete (no commit)
+- 添加 git remote github -> git@github.com:childelins/ckjr-cli.git
+- check-github-remote 验证通过
+- 端到端 make build VERSION=v0.0.3-test: 5 个平台全部成功

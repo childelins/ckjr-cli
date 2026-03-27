@@ -1162,3 +1162,61 @@
 |------|---------|---------|
 | workflow 测试 YAML 使用简单字符串而非 Step 结构体 | 1 | 修复测试 YAML 使用完整的 Step 结构（id/description/command/params） |
 | workflow 命令未在测试中注册（Execute() 延迟注册） | 1 | 在 TestMain 中显式调用 rootCmd.AddCommand(workflowcmd.NewCommand(yamlFS)) |
+
+---
+---
+
+# 本地多平台构建与 GitHub Release 发布 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-27-local-build-release.md
+
+## 概述
+
+创建 Makefile 实现本地多平台交叉编译和一键发布到 GitHub Release。双仓库模式：origin 指向 GitLab（开发），github remote 指向 GitHub（发布）。
+
+---
+
+## Task 1: 创建 Makefile 基础框架
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (818678b)
+- **Description**: 创建 Makefile 包含变量定义、version 目标和 clean 目标
+
+---
+
+## Task 2: 添加 build-local 目标
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (918fefd)
+- **Description**: 在 Makefile 中添加 build-local 目标，仅编译当前平台二进制到 bin/ 目录
+
+---
+
+## Task 3: 添加 build 目标（多平台交叉编译）
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (9521072)
+- **Description**: 添加 build 目标支持 5 平台交叉编译，打包为 tar.gz/zip
+
+---
+
+## Task 4: 添加前置检查和 release 目标
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (9ec4cc2)
+- **Description**: 添加 check-gh/check-clean/check-github-remote 前置检查和 release 全自动发布目标
+
+---
+
+## Task 5: 配置 GitHub remote 并端到端验证
+
+- **Source**: Plan -> Task 5
+- **Status**: complete (no commit - env only)
+- **Description**: 配置 github remote，端到端验证完整构建流程
+
+---
+
+## 遇到的错误 (本地构建发布)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
