@@ -1,0 +1,99 @@
+name: agent
+description: AI智能体管理
+routes:
+    create:
+        method: POST
+        path: /admin/aiCreationCenter/createApp
+        description: 创建智能体
+        template:
+            avatar:
+                description: 头像URL
+                required: true
+            botType:
+                description: 智能体类型, 99-自营智能体 100-Coze智能体
+                required: false
+                default: 99
+                type: int
+            desc:
+                description: 描述
+                required: true
+            isSaleOnly:
+                description: 是否支持售卖, 1-交付型 0-客服型
+                required: false
+                default: 1
+                type: int
+            name:
+                description: 智能体名称
+                required: true
+            promptType:
+                description: 提示词模板类型, 1-交付型 3-角色类/客服型
+                required: false
+                default: 3
+                type: int
+    delete:
+        method: POST
+        path: /admin/aiCreationCenter/deleteApp
+        description: 删除智能体
+        template:
+            aikbId:
+                description: 智能体ID
+                required: true
+    get:
+        method: POST
+        path: /admin/aiCreationCenter/describeApp
+        description: 获取智能体详情
+        template:
+            aikbId:
+                description: 智能体ID
+                required: true
+    list:
+        method: POST
+        path: /admin/aiCreationCenter/listApp
+        description: 获取智能体列表
+        template:
+            enablePagination:
+                description: 是否分页返回, 1-是 0-否
+                required: false
+                default: 0
+                type: int
+            limit:
+                description: 每页数量
+                required: false
+                default: 10
+                type: int
+            name:
+                description: 按名称搜索
+                required: false
+            page:
+                description: 页码
+                required: false
+                default: 1
+                type: int
+            platType:
+                description: 智能体类型, 0-全部 1-自营智能体 2-Coze智能体
+                required: false
+                default: 0
+                type: int
+    update:
+        method: POST
+        path: /admin/aiCreationCenter/modifyApp
+        description: 更新智能体
+        template:
+            aikbId:
+                description: 智能体ID
+                required: true
+            avatar:
+                description: 智能体头像URL
+                required: true
+            desc:
+                description: 智能体描述
+                required: true
+            greeting:
+                description: 开场白文案
+                required: false
+            instructions:
+                description: 智能体提示词
+                required: true
+            name:
+                description: 智能体名称
+                required: true

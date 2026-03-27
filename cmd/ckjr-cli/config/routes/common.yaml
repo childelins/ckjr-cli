@@ -1,0 +1,16 @@
+name: common
+description: 平台公共接口，可以获取公众号端访问 URL 等
+routes:
+    getLink:
+        method: GET
+        path: /admin/common/qrcodeImg
+        description: 获取公众号端访问 URL 和二维码图片
+        template:
+            prodId:
+                description: 产品ID
+                required: true
+                type: int
+            prodType:
+                description: 产品类型, ai_service-智能体
+                required: true
+                example: ai_service
