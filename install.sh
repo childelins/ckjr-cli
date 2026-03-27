@@ -136,10 +136,43 @@ install_via_release() {
     info "Installed to $INSTALL_DIR/$dest_name"
 }
 
+# 安装 Claude Code Skills
+install_skills() {
+    local skills_dir="$HOME/.claude/skills"
+    local tarball_url="https://api.github.com/repos/${REPO}/tarball/master"
+
+    info "Installing Claude Code skills..."
+
+    mkdir -p "$skills_dir"
+
+    local tmp_dir=$(mktemp -d)
+
+    # 下载仓库归档
+    if command -v curl &> /dev/null; then
+        curl -fsSL ${GITHUB_TOKEN:+-H "Authorization: token $GITHUB_TOKEN"} -o "$tmp_dir/repo.tar.gz" "$tarball_url"
+    else
+        wget -q ${GITHUB_TOKEN:+--header="Authorization: token $GITHUB_TOKEN"} -O "$tmp_dir/repo.tar.gz" "$tarball_url"
+    fi
+
+    # 解压并提取 skills 目录
+    tar -xzf "$tmp_dir/repo.tar.gz" -C "$tmp_dir"
+    local repo_dir=$(ls -d "$tmp_dir"/childelins-ckjr-cli-* 2>/dev/null | head -n1)
+
+    if [ -d "$repo_dir/skills" ]; then
+        cp -r "$repo_dir/skills"/* "$skills_dir/"
+        info "Skills installed to $skills_dir/"
+    else
+        warn "No skills found in repository"
+    fi
+
+    rm -rf "$tmp_dir"
+}
+
 # 主函数
 main() {
     info "Installing $BINARY_NAME from $REPO"
     install_via_release
+    install_skills
 }
 
 main "$@"

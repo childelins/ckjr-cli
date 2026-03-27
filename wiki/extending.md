@@ -133,28 +133,23 @@ echo 'curl -X POST https://api.example.com/admin/example/list -d '"'"'{"page":1}
 
 ```bash
 # 编译
-go build -o ckjr-cli ./cmd/ckjr-cli
+make build-local
 
 # 查看参数模板
-./ckjr-cli example list --template
+bin/ckjr-cli example list --template
 
 # 执行请求
-./ckjr-cli example list --pretty
+bin/ckjr-cli example list --pretty
 ```
 
 ## 发布流程
 
-### 推送 tag 触发自动发布
-
 ```bash
-git tag v1.x.x
-git push origin v1.x.x
+# 一键发布：tag + 构建 + 上传到 GitHub Release
+make release VERSION=vX.Y.Z
 ```
 
-CI/CD 流程（`.github/workflows/release.yml`）：
-1. GitHub Actions 自动构建 linux/darwin/windows x amd64/arm64
-2. 创建 GitHub Release 并上传二进制文件
-3. 用户通过 `install.sh` 或直接下载使用
+发布流程：前置检查（gh 登录、工作区干净、github remote）-> 创建 tag -> 推送 tag -> 多平台构建 -> 创建 GitHub Release 上传二进制文件。
 
 ---
 

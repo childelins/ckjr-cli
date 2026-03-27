@@ -1220,3 +1220,53 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |------|---------|---------|
+
+---
+---
+
+# install.sh 简化 - 任务计划
+
+> Source plan: docs/superpowers/plans/install-sh-simplify.md
+
+## 概述
+
+简化 install.sh，移除 Go 安装方式，仅保留 GitHub Release 下载；同步修复文档中的分支名 bug。
+
+---
+
+## Phase 96: 简化 install.sh
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (3ccd4ab)
+- **Description**: 删除 has_go() 和 install_via_go() 函数，简化 main() 函数，仅保留 install_via_release()
+
+---
+
+## Phase 97: 更新 wiki/install.md
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (4d37554)
+- **Description**: 修复 curl URL 分支名 main->master，删除 go install 相关内容，重新编号方式三为方式二
+
+---
+
+## Phase 98: 更新 README.md
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (d128ba7)
+- **Description**: 修复 curl URL 分支名 main->master，移除 go install 引用
+
+---
+
+## Phase 99: 最终验证
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (final)
+- **Description**: 全局验证无 go install 残留，验证 install.sh 语法，验证 curl URL 一致性
+
+---
+
+## 遇到的错误 (install.sh 简化)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|

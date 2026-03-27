@@ -549,3 +549,31 @@
 - 添加 git remote github -> git@github.com:childelins/ckjr-cli.git
 - check-github-remote 验证通过
 - 端到端 make build VERSION=v0.0.3-test: 5 个平台全部成功
+
+## 2026-03-27 install.sh 简化
+
+### Phase 96: 简化 install.sh
+- Status: complete (3ccd4ab)
+- 删除 has_go() 函数（环境检测）
+- 删除 install_via_go() 函数（Go 安装方式，含 GOPRIVATE/认证逻辑）
+- 简化 main() 函数，移除交互式选择，直接调用 install_via_release
+- bash -n 语法验证通过，无 go install 残留
+
+### Phase 97: 更新 wiki/install.md
+- Status: complete (4d37554)
+- 修复 curl URL 分支名 main -> master
+- 移除安装位置中的 go install 行
+- 删除"方式二：go install"整节
+- "方式三"改为"方式二"
+- 简化常见问题表：移除 go install 失败行，简化 PATH 和 Release 描述
+
+### Phase 98: 更新 README.md
+- Status: complete (d128ba7)
+- 修复 curl URL 分支名 main -> master
+- 移除安装方式描述中的 go install 引用
+
+### Phase 99: 最终验证
+- Status: complete (final)
+- grep -rn 'go install' 三个文件：无匹配
+- bash -n install.sh：语法正确
+- curl URL 一致性：README.md 和 wiki/install.md 均使用 master 分支

@@ -1,6 +1,6 @@
 ---
 name: ckjr-cli
-description: 创客匠人 SaaS 平台 CLI，管理智能体、订单等业务模块
+description: 创客匠人 SaaS 平台 CLI，管理智能体、产品等业务模块
 triggers:
   - command: /ckjr-cli
   - intent: 创客匠人、智能体、SaaS平台操作、ckjr
@@ -16,7 +16,7 @@ allowed-tools:
 
 1. 安装 CLI:
    ```bash
-   go install github.com/childelins/ckjr-cli/cmd/ckjr-cli@latest
+   curl -fsSL https://raw.githubusercontent.com/childelins/ckjr-cli/master/install.sh | bash
    ```
 
 2. 初始化配置:
