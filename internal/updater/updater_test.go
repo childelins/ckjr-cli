@@ -1,9 +1,14 @@
 package updater
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -139,4 +144,106 @@ func TestParseAssetURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createTestTarGz(t *testing.T, name string, content []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+
+	hdr := &tar.Header{Name: name, Mode: 0755, Size: int64(len(content))}
+	if err := tw.WriteHeader(hdr); err != nil {
+		t.Fatalf("写入 tar header 失败: %v", err)
+	}
+	if _, err := tw.Write(content); err != nil {
+		t.Fatalf("写入 tar 内容失败: %v", err)
+	}
+	tw.Close()
+	gw.Close()
+	return buf.Bytes()
+}
+
+func TestDownloadAndReplace(t *testing.T) {
+	// 创建模拟的新二进制 HTTP 服务
+	newBinaryContent := []byte("new-binary-content")
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/test-binary" {
+			w.Write(newBinaryContent)
+			return
+		}
+		// 模拟 tar.gz 产物下载
+		w.Header().Set("Content-Type", "application/gzip")
+		w.Write(createTestTarGz(t, "ckjr-cli", newBinaryContent))
+	}))
+	defer ts.Close()
+
+	t.Run("替换成功", func(t *testing.T) {
+		// 创建模拟的当前二进制文件
+		tmpDir := t.TempDir()
+		binaryPath := filepath.Join(tmpDir, "ckjr-cli")
+
+		originalContent := []byte("old-binary")
+		if err := os.WriteFile(binaryPath, originalContent, 0755); err != nil {
+			t.Fatalf("写入测试文件失败: %v", err)
+		}
+
+		err := DownloadAndReplace(ts.URL+"/test-binary", binaryPath)
+		if err != nil {
+			t.Fatalf("DownloadAndReplace() error = %v", err)
+		}
+
+		// 验证文件已被替换
+		got, err := os.ReadFile(binaryPath)
+		if err != nil {
+			t.Fatalf("读取文件失败: %v", err)
+		}
+		if string(got) != string(newBinaryContent) {
+			t.Errorf("文件内容 = %q, want %q", string(got), string(newBinaryContent))
+		}
+
+		// 验证权限
+		info, _ := os.Stat(binaryPath)
+		if info.Mode()&0111 == 0 {
+			t.Error("文件应具有可执行权限")
+		}
+
+		// 验证 .bak 已清理
+		if _, err := os.Stat(binaryPath + ".bak"); !os.IsNotExist(err) {
+			t.Error(".bak 文件应已被删除")
+		}
+	})
+
+	t.Run("替换失败时回滚", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalContent := []byte("original-binary")
+
+		// 先在可写目录中创建文件和目录，然后设为只读
+		readOnlyDir := filepath.Join(tmpDir, "readonly")
+		if err := os.MkdirAll(readOnlyDir, 0755); err != nil {
+			t.Fatalf("创建目录失败: %v", err)
+		}
+		readOnlyPath := filepath.Join(readOnlyDir, "ckjr-cli")
+		if err := os.WriteFile(readOnlyPath, originalContent, 0755); err != nil {
+			t.Fatalf("写入测试文件失败: %v", err)
+		}
+		// 将目录设为只读，使后续写文件失败
+		if err := os.Chmod(readOnlyDir, 0555); err != nil {
+			t.Fatalf("设置目录只读失败: %v", err)
+		}
+
+		err := DownloadAndReplace(ts.URL+"/test-binary", readOnlyPath)
+		if err == nil {
+			t.Error("期望返回错误")
+		}
+
+		// 恢复目录权限以便清理和读取
+		os.Chmod(readOnlyDir, 0755)
+
+		// 验证原始文件未被修改
+		got, _ := os.ReadFile(readOnlyPath)
+		if string(got) != string(originalContent) {
+			t.Error("回滚失败: 原始文件内容已被修改")
+		}
+	})
 }
