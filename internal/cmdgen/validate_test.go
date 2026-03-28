@@ -218,3 +218,56 @@ func TestValidateConstraints_FloatMinMax(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAll_MultipleErrors(t *testing.T) {
+	template := map[string]router.Field{
+		"name": {
+			Description: "名称",
+			Required:    true,
+			Type:        "string",
+			MinLength:   intPtr(2),
+		},
+		"age": {
+			Description: "年龄",
+			Required:    true,
+			Type:        "int",
+			Min:         floatPtr(0),
+			Max:         floatPtr(150),
+		},
+		"email": {
+			Description: "邮箱",
+			Required:    false,
+			Type:        "string",
+			Pattern:     `^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$`,
+		},
+	}
+
+	// 缺少 name 和 age（required），email 格式错误
+	input := map[string]interface{}{
+		"email": "bad-email",
+	}
+
+	errs := ValidateAll(input, template)
+	if len(errs) < 3 {
+		t.Errorf("expected at least 3 errors (2 missing + 1 pattern), got %d: %v", len(errs), errs)
+	}
+}
+
+func TestValidateAll_Pass(t *testing.T) {
+	template := map[string]router.Field{
+		"name": {
+			Description: "名称",
+			Required:    true,
+			Type:        "string",
+			MinLength:   intPtr(1),
+		},
+	}
+	input := map[string]interface{}{
+		"name": "hello",
+	}
+
+	errs := ValidateAll(input, template)
+	if len(errs) != 0 {
+		t.Errorf("expected 0 errors, got %d: %v", len(errs), errs)
+	}
+}

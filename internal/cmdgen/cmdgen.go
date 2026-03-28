@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -77,9 +78,13 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 			// 应用默认值
 			applyDefaults(input, route.Template)
 
-			// 校验必填字段
-			if missing := validateRequired(input, route.Template); len(missing) > 0 {
-				output.PrintError(os.Stderr, fmt.Sprintf("缺少必填字段: %v", missing))
+			// 校验参数
+			if errs := ValidateAll(input, route.Template); len(errs) > 0 {
+				var msgs []string
+				for _, e := range errs {
+					msgs = append(msgs, e.Error())
+				}
+				output.PrintError(os.Stderr, fmt.Sprintf("参数校验失败:\n  %s", strings.Join(msgs, "\n  ")))
 				os.Exit(1)
 			}
 
