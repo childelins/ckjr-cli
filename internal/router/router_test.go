@@ -101,6 +101,84 @@ routes:
 	}
 }
 
+func TestParseRouteConfig_Constraints(t *testing.T) {
+	yamlContent := `
+name: test
+description: 测试约束
+routes:
+  create:
+    method: POST
+    path: /create
+    template:
+      page:
+        description: 页码
+        required: false
+        default: 1
+        type: int
+        min: 1
+        max: 1000
+      keyword:
+        description: 关键词
+        required: false
+        type: string
+        minLength: 1
+        maxLength: 100
+      email:
+        description: 邮箱
+        required: true
+        type: string
+        pattern: "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"
+      score:
+        description: 评分
+        required: false
+        type: float
+        min: 0.0
+        max: 10.0
+`
+	cfg, err := Parse([]byte(yamlContent))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	route := cfg.Routes["create"]
+
+	// page: min/max
+	page := route.Template["page"]
+	if page.Min == nil || *page.Min != 1.0 {
+		t.Errorf("page.Min = %v, want 1.0", page.Min)
+	}
+	if page.Max == nil || *page.Max != 1000.0 {
+		t.Errorf("page.Max = %v, want 1000.0", page.Max)
+	}
+
+	// keyword: minLength/maxLength
+	keyword := route.Template["keyword"]
+	if keyword.MinLength == nil || *keyword.MinLength != 1 {
+		t.Errorf("keyword.MinLength = %v, want 1", keyword.MinLength)
+	}
+	if keyword.MaxLength == nil || *keyword.MaxLength != 100 {
+		t.Errorf("keyword.MaxLength = %v, want 100", keyword.MaxLength)
+	}
+
+	// email: pattern
+	email := route.Template["email"]
+	if email.Pattern != `^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$` {
+		t.Errorf("email.Pattern = %q", email.Pattern)
+	}
+
+	// score: float type with min/max
+	score := route.Template["score"]
+	if score.Type != "float" {
+		t.Errorf("score.Type = %q, want \"float\"", score.Type)
+	}
+	if score.Min == nil || *score.Min != 0.0 {
+		t.Errorf("score.Min = %v, want 0.0", score.Min)
+	}
+	if score.Max == nil || *score.Max != 10.0 {
+		t.Errorf("score.Max = %v, want 10.0", score.Max)
+	}
+}
+
 func TestGetTemplate(t *testing.T) {
 	cfg := &RouteConfig{
 		Name: "agent",

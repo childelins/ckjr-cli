@@ -13,6 +13,15 @@ type Field struct {
 	Default     interface{} `yaml:"default,omitempty"`
 	Type        string      `yaml:"type,omitempty"`
 	Example     string      `yaml:"example,omitempty"`
+
+	// 数值约束
+	Min *float64 `yaml:"min,omitempty"`
+	Max *float64 `yaml:"max,omitempty"`
+
+	// 字符串约束
+	MinLength *int   `yaml:"minLength,omitempty"`
+	MaxLength *int   `yaml:"maxLength,omitempty"`
+	Pattern   string `yaml:"pattern,omitempty"`
 }
 
 // Route 定义单个路由
