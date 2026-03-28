@@ -16,6 +16,7 @@ import (
 
 	configcmd "github.com/childelins/ckjr-cli/cmd/config"
 	routecmd "github.com/childelins/ckjr-cli/cmd/route"
+	updatecmd "github.com/childelins/ckjr-cli/cmd/update"
 	workflowcmd "github.com/childelins/ckjr-cli/cmd/workflow"
 )
 
@@ -65,6 +66,8 @@ func init() {
 
 	rootCmd.AddCommand(configcmd.NewCommand())
 	rootCmd.AddCommand(routecmd.NewCommand())
+	updatecmd.SetVersion(version)
+	rootCmd.AddCommand(updatecmd.NewCommand())
 }
 
 func initLogging() {
