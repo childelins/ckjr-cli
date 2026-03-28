@@ -123,7 +123,7 @@ func inferField(val interface{}) (Field, bool) {
 		if v == math.Trunc(v) {
 			return Field{Type: "int", Example: int(v)}, true
 		}
-		return Field{Type: "string", Example: v}, true
+		return Field{Type: "float", Example: v}, true
 	case bool:
 		return Field{Type: "bool", Example: v}, true
 	case string:

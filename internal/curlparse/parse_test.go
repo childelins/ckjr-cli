@@ -154,3 +154,30 @@ func TestParse_Invalid(t *testing.T) {
 		})
 	}
 }
+
+func TestParse_FloatType(t *testing.T) {
+	curl := `curl 'https://example.com/api' --data-raw '{"score":3.14,"count":5}'`
+	result, err := Parse(curl)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	score, ok := result.Fields["score"]
+	if !ok {
+		t.Fatal("score field not found")
+	}
+	if score.Type != "float" {
+		t.Errorf("score.Type = %q, want \"float\"", score.Type)
+	}
+	if score.Example != 3.14 {
+		t.Errorf("score.Example = %v, want 3.14", score.Example)
+	}
+
+	count, ok := result.Fields["count"]
+	if !ok {
+		t.Fatal("count field not found")
+	}
+	if count.Type != "int" {
+		t.Errorf("count.Type = %q, want \"int\"", count.Type)
+	}
+}
