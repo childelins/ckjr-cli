@@ -577,3 +577,90 @@
 - grep -rn 'go install' 三个文件：无匹配
 - bash -n install.sh：语法正确
 - curl URL 一致性：README.md 和 wiki/install.md 均使用 master 分支
+
+## 2026-03-28 Update 命令实现
+
+### Phase 100: 版本比较 (CompareVersions)
+- Status: complete (ef45a7c)
+- TDD 实现 CompareVersions，9 个测试用例全部通过
+- 修复空字符串返回值问题
+
+### Phase 101: GitHub API 版本查询 + 产物匹配
+- Status: complete (a370cce)
+- TDD 实现 CheckLatestVersion 和 ParseAssetURL
+- 修复 asset name pattern 匹配问题（保留 v 前缀）
+
+### Phase 102: 下载与替换 (DownloadAndReplace)
+- Status: complete (913138c)
+- TDD 实现 DownloadAndReplace，支持 tar.gz/zip 解压和裸二进制
+- 实现备份回滚机制
+- 修复只读目录测试用例
+
+### Phase 103: Cobra 命令集成 (cmd/update)
+- Status: complete (d02cda6)
+- TDD 实现 cmd/update 命令
+- 支持 dev 版本报错、已是最新版本提示
+
+### Phase 104: 注册 update 命令到 root.go
+- Status: complete (4692de2)
+- 在 root.go 中注册 update 命令
+- 编译通过，全量测试通过（所有包）
+- update 子命令出现在 --help 输出中
+
+## 2026-03-29 Field 类型与约束校验
+
+### Phase 1: Field 结构扩展
+- Status: complete (f7d4a47)
+- Field 结构体添加 Min/Max/MinLength/MaxLength/Pattern 约束字段
+- 添加 TestParseRouteConfig_Constraints 测试验证 YAML 解析
+
+### Phase 2: 类型校验
+- Status: complete (e77b353)
+- 创建 validate.go 和 validate_test.go
+- 实现 validateType 支持 string/int/float/bool/array 类型校验
+- 实现 ValidateAll/FieldValidationError/compilePatterns 骨架
+
+### Phase 3: 约束校验
+- Status: complete (42fb63d)
+- 实现 validateConstraints 支持 min/max/minLength/maxLength/pattern 约束
+- 5 组表驱动测试覆盖数值范围、字符串长度、正则、类型不相关约束、浮点数约束
+
+### Phase 4: ValidateAll 集成到 cmdgen
+- Status: complete (23972df)
+- 替换 cmdgen.go 中 validateRequired 为 ValidateAll
+- 添加 TestValidateAll_MultipleErrors 和 TestValidateAll_Pass 集成测试
+
+### Phase 5: printTemplate 展示约束信息
+- Status: complete (2fb5c55)
+- 修改 printTemplateTo 在输出中增加 constraints 字段
+- 添加 TestPrintTemplate_Constraints 测试
+
+### Phase 6: curlparse float 类型推断
+- Status: complete (acc0b9f)
+- 修改 inferField 中 float64 非整数分支从 Type: "string" 改为 Type: "float"
+- 添加 TestParse_FloatType 测试
+
+### Phase 7: 全量测试验证
+- Status: complete
+- 全部 16 个包测试通过，无失败
+
+## 2026-03-29 YAML 配置文件兜底测试验证
+
+### Phase 112: 创建验证辅助函数和测试用例
+- Status: complete
+- 创建 cmd/ckjr-cli/yaml_validate_test.go
+- 实现 loadRouteFiles/loadWorkflowFiles 辅助函数（从 configFS 遍历 YAML 文件）
+- 实现 validateRouteConfig（结构验证：name/description/routes 非空）
+- 实现 validateRouteFields（语义验证：method/path/description/type/constraints）
+- 实现 validateWorkflowConfig（结构验证：name/description/workflows/steps/inputs）
+- 实现 validateWorkflowCommandRefs（跨文件引用验证）
+- TestAllRoutes: 2 个 subtest (agent.yaml, common.yaml) 全部通过
+- TestAllWorkflows: 1 个 subtest (agent.yaml) 通过
+- TestWorkflowCommandReferences: 3 个 subtest (create/configure/get-link) 全部通过
+
+### Phase 113: 运行测试并修复
+- Status: complete
+- go test ./cmd/ckjr-cli/ -run TestAll -v: 全部通过
+- go test ./...: 全部 17 个包测试通过
+- go vet ./cmd/ckjr-cli/: 无警告
+- go build ./cmd/ckjr-cli/: 编译成功

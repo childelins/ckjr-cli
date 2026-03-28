@@ -1270,3 +1270,172 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |------|---------|---------|
+
+---
+---
+
+# Update 命令实现 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-28-update-command.md
+
+## 概述
+
+为 ckjr-cli 添加 `ckjr-cli update` 命令，自动检测 GitHub Release 最新版本并替换当前二进制。
+
+---
+
+## Phase 100: 版本比较 (CompareVersions)
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (ef45a7c)
+- **Description**: TDD 实现 CompareVersions 函数，支持 semver 版本比较、v 前缀处理、空字符串处理
+
+---
+
+## Phase 101: GitHub API 版本查询 + 产物匹配
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (a370cce)
+- **Description**: TDD 实现 CheckLatestVersion 和 ParseAssetURL，支持 GitHub Release API 查询和多平台产物匹配
+
+---
+
+## Phase 102: 下载与替换 (DownloadAndReplace)
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (913138c)
+- **Description**: TDD 实现 DownloadAndReplace，支持 tar.gz/zip 解压、备份回滚、裸二进制下载
+
+---
+
+## Phase 103: Cobra 命令集成 (cmd/update)
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (d02cda6)
+- **Description**: TDD 实现 cmd/update 命令，支持版本检查、dev 版本报错、已是最新版本提示
+
+---
+
+## Phase 104: 注册 update 命令到 root.go
+
+- **Source**: Plan -> Task 5
+- **Status**: complete (4692de2)
+- **Description**: 在 cmd/root.go 中注册 update 命令，编译通过，全量测试通过
+
+---
+
+## 遇到的错误 (Update 命令)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
+| CompareVersions 空字符串返回 -1 而非 0 | 1 | 添加空字符串早期返回 return 0 |
+| ParseAssetURL pattern 不匹配 (去掉 v 后 vs 保留 v) | 1 | 不 trim v 前缀，直接用 version 拼接 pattern |
+| 回滚测试只读目录写入失败 | 1 | 先在可写目录创建文件，再 chmod 为只读 |
+| SetArgs 可变参数编译错误 | 1 | 改为 []string 切片传参 |
+
+---
+
+# Field 类型与约束校验 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-28-field-validation.md
+
+## 概述
+
+为 route YAML 参数模板增加类型校验和约束校验（min/max/minLength/maxLength/pattern）。
+
+---
+
+## Phase 105: Field 结构扩展
+
+- **Source**: Plan -> Phase 1
+- **Status**: complete (f7d4a47)
+- **Description**: Field 结构体添加 Min/Max/MinLength/MaxLength/Pattern 约束字段，添加测试验证 YAML 解析
+
+---
+
+## Phase 106: 类型校验
+
+- **Source**: Plan -> Phase 2
+- **Status**: complete (e77b353)
+- **Description**: 创建 validate.go 实现 validateType/ValidateAll/FieldValidationError，支持 string/int/float/bool/array 类型校验
+
+---
+
+## Phase 107: 约束校验
+
+- **Source**: Plan -> Phase 3
+- **Status**: complete (42fb63d)
+- **Description**: 实现 validateConstraints 支持 min/max/minLength/maxLength/pattern 约束校验
+
+---
+
+## Phase 108: ValidateAll 集成到 cmdgen
+
+- **Source**: Plan -> Phase 4
+- **Status**: complete (23972df)
+- **Description**: 替换 cmdgen.go 中 validateRequired 为 ValidateAll，添加集成测试
+
+---
+
+## Phase 109: printTemplate 展示约束信息
+
+- **Source**: Plan -> Phase 5
+- **Status**: complete (2fb5c55)
+- **Description**: 修改 printTemplateTo 在输出中增加 constraints 字段
+
+---
+
+## Phase 110: curlparse float 类型推断
+
+- **Source**: Plan -> Phase 6
+- **Status**: complete (acc0b9f)
+- **Description**: 修改 inferField 中 float64 非整数分支从 Type: "string" 改为 Type: "float"
+
+---
+
+## Phase 111: 全量测试验证
+
+- **Source**: Plan -> Phase 7
+- **Status**: complete
+- **Description**: 全部 16 个包测试通过，无失败
+
+---
+
+## 遇到的错误 (Field 类型与约束校验)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
+
+---
+---
+
+# YAML 配置文件兜底测试验证 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-29-yaml-test-validation.md
+
+## 概述
+
+为 routes 和 workflows YAML 文件添加 go test 兜底验证，覆盖结构完整性、字段语义和跨文件引用三个层次。
+
+---
+
+## Phase 112: 创建验证辅助函数和测试用例
+
+- **Source**: Plan -> Phase 1 + Phase 2
+- **Status**: complete
+- **Description**: 创建 yaml_validate_test.go，包含 loadRouteFiles/loadWorkflowFiles 辅助函数、validateRouteConfig/validateRouteFields/validateWorkflowConfig/validateWorkflowCommandRefs 验证函数，以及 TestAllRoutes/TestAllWorkflows/TestWorkflowCommandReferences 测试用例
+
+---
+
+## Phase 113: 运行测试并修复
+
+- **Source**: Plan -> Phase 3
+- **Status**: complete
+- **Description**: 运行 go test ./cmd/ckjr-cli/ -run TestAll -v，确保全部通过，运行 go test ./... 确保不破坏现有测试。全部 17 个包测试通过，go vet 和 go build 通过
+
+---
+
+## 遇到的错误 (YAML 兜底测试)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
