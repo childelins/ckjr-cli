@@ -102,8 +102,66 @@ func validateType(fieldName string, value interface{}, expectedType string) *Fie
 }
 
 func validateConstraints(input map[string]interface{}, template map[string]router.Field) []*FieldValidationError {
-	// Phase 3 实现
-	return nil
+	patterns, patternErr := compilePatterns(template)
+	if patternErr != nil {
+		return []*FieldValidationError{patternErr}
+	}
+
+	var errs []*FieldValidationError
+	for name, field := range template {
+		val, exists := input[name]
+		if !exists || val == nil {
+			continue
+		}
+
+		switch field.Type {
+		case "int", "float":
+			v, ok := val.(float64)
+			if !ok {
+				continue
+			}
+			if field.Min != nil && v < *field.Min {
+				errs = append(errs, &FieldValidationError{
+					Field:   name,
+					Message: fmt.Sprintf("值 %v 小于最小值 %v", v, *field.Min),
+				})
+			}
+			if field.Max != nil && v > *field.Max {
+				errs = append(errs, &FieldValidationError{
+					Field:   name,
+					Message: fmt.Sprintf("值 %v 大于最大值 %v", v, *field.Max),
+				})
+			}
+
+		case "string":
+			str, ok := val.(string)
+			if !ok {
+				continue
+			}
+			if field.MinLength != nil && len(str) < *field.MinLength {
+				errs = append(errs, &FieldValidationError{
+					Field:   name,
+					Message: fmt.Sprintf("长度 %d 小于最小长度 %d", len(str), *field.MinLength),
+				})
+			}
+			if field.MaxLength != nil && len(str) > *field.MaxLength {
+				errs = append(errs, &FieldValidationError{
+					Field:   name,
+					Message: fmt.Sprintf("长度 %d 大于最大长度 %d", len(str), *field.MaxLength),
+				})
+			}
+			if field.Pattern != "" {
+				re := patterns[name]
+				if !re.MatchString(str) {
+					errs = append(errs, &FieldValidationError{
+						Field:   name,
+						Message: fmt.Sprintf("值 %q 不匹配正则 %q", str, field.Pattern),
+					})
+				}
+			}
+		}
+	}
+	return errs
 }
 
 // compilePatterns 预编译 template 中的正则表达式

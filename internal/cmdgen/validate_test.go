@@ -2,6 +2,8 @@ package cmdgen
 
 import (
 	"testing"
+
+	"github.com/childelins/ckjr-cli/internal/router"
 )
 
 func TestValidateType_String(t *testing.T) {
@@ -77,5 +79,142 @@ func TestValidateType_Nil(t *testing.T) {
 	// nil 值应返回类型不匹配
 	if err := validateType("field", nil, "string"); err == nil {
 		t.Error("nil should fail for string type")
+	}
+}
+
+func intPtr(v int) *int          { return &v }
+func floatPtr(v float64) *float64 { return &v }
+
+func TestValidateConstraints_MinMax(t *testing.T) {
+	template := map[string]router.Field{
+		"page": {
+			Type: "int",
+			Min:  floatPtr(1),
+			Max:  floatPtr(100),
+		},
+	}
+
+	tests := []struct {
+		name  string
+		input map[string]interface{}
+		errs  int
+	}{
+		{"within range", map[string]interface{}{"page": float64(50)}, 0},
+		{"at min", map[string]interface{}{"page": float64(1)}, 0},
+		{"at max", map[string]interface{}{"page": float64(100)}, 0},
+		{"below min", map[string]interface{}{"page": float64(0)}, 1},
+		{"above max", map[string]interface{}{"page": float64(101)}, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := validateConstraints(tt.input, template)
+			if len(errs) != tt.errs {
+				t.Errorf("got %d errors, want %d: %v", len(errs), tt.errs, errs)
+			}
+		})
+	}
+}
+
+func TestValidateConstraints_MinLengthMaxLength(t *testing.T) {
+	template := map[string]router.Field{
+		"name": {
+			Type:      "string",
+			MinLength: intPtr(2),
+			MaxLength: intPtr(10),
+		},
+	}
+
+	tests := []struct {
+		name  string
+		input map[string]interface{}
+		errs  int
+	}{
+		{"valid length", map[string]interface{}{"name": "hello"}, 0},
+		{"at min", map[string]interface{}{"name": "ab"}, 0},
+		{"at max", map[string]interface{}{"name": "0123456789"}, 0},
+		{"too short", map[string]interface{}{"name": "a"}, 1},
+		{"too long", map[string]interface{}{"name": "01234567890"}, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := validateConstraints(tt.input, template)
+			if len(errs) != tt.errs {
+				t.Errorf("got %d errors, want %d: %v", len(errs), tt.errs, errs)
+			}
+		})
+	}
+}
+
+func TestValidateConstraints_Pattern(t *testing.T) {
+	template := map[string]router.Field{
+		"email": {
+			Type:    "string",
+			Pattern: `^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$`,
+		},
+	}
+
+	tests := []struct {
+		name  string
+		input map[string]interface{}
+		errs  int
+	}{
+		{"valid email", map[string]interface{}{"email": "test@example.com"}, 0},
+		{"invalid email", map[string]interface{}{"email": "not-email"}, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := validateConstraints(tt.input, template)
+			if len(errs) != tt.errs {
+				t.Errorf("got %d errors, want %d: %v", len(errs), tt.errs, errs)
+			}
+		})
+	}
+}
+
+func TestValidateConstraints_Irrelevant(t *testing.T) {
+	// 约束与 type 不匹配时不报错
+	template := map[string]router.Field{
+		"name": {
+			Type: "string",
+			Min:  floatPtr(1),
+			Max:  floatPtr(10),
+		},
+	}
+	input := map[string]interface{}{"name": "hello"}
+	errs := validateConstraints(input, template)
+	if len(errs) != 0 {
+		t.Errorf("min/max on string should be ignored, got: %v", errs)
+	}
+}
+
+func TestValidateConstraints_FloatMinMax(t *testing.T) {
+	template := map[string]router.Field{
+		"score": {
+			Type: "float",
+			Min:  floatPtr(0.0),
+			Max:  floatPtr(10.0),
+		},
+	}
+
+	tests := []struct {
+		name  string
+		input map[string]interface{}
+		errs  int
+	}{
+		{"within range", map[string]interface{}{"score": float64(5.5)}, 0},
+		{"below min", map[string]interface{}{"score": float64(-0.1)}, 1},
+		{"above max", map[string]interface{}{"score": float64(10.1)}, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := validateConstraints(tt.input, template)
+			if len(errs) != tt.errs {
+				t.Errorf("got %d errors, want %d: %v", len(errs), tt.errs, errs)
+			}
+		})
 	}
 }
