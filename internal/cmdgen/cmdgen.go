@@ -145,6 +145,28 @@ func printTemplateTo(w io.Writer, template map[string]router.Field) {
 		if field.Example != "" {
 			entry["example"] = field.Example
 		}
+
+		// 约束信息
+		constraints := map[string]interface{}{}
+		if field.Min != nil {
+			constraints["min"] = *field.Min
+		}
+		if field.Max != nil {
+			constraints["max"] = *field.Max
+		}
+		if field.MinLength != nil {
+			constraints["minLength"] = *field.MinLength
+		}
+		if field.MaxLength != nil {
+			constraints["maxLength"] = *field.MaxLength
+		}
+		if field.Pattern != "" {
+			constraints["pattern"] = field.Pattern
+		}
+		if len(constraints) > 0 {
+			entry["constraints"] = constraints
+		}
+
 		tmpl[name] = entry
 	}
 	output.Print(w, tmpl, true)

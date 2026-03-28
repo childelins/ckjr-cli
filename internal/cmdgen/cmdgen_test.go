@@ -231,3 +231,64 @@ func TestHandleAPIError_ResponseError_Verbose(t *testing.T) {
 		t.Errorf("verbose should contain debug info, got: %s", got)
 	}
 }
+
+func TestPrintTemplate_Constraints(t *testing.T) {
+	minVal := 1.0
+	maxVal := 100.0
+	minLen := 2
+	maxLen := 50
+
+	template := map[string]router.Field{
+		"page": {
+			Description: "页码",
+			Required:    false,
+			Default:     1,
+			Type:        "int",
+			Min:         &minVal,
+			Max:         &maxVal,
+		},
+		"keyword": {
+			Description: "关键词",
+			Required:    true,
+			Type:        "string",
+			MinLength:   &minLen,
+			MaxLength:   &maxLen,
+			Pattern:     `^\w+$`,
+		},
+	}
+
+	var buf bytes.Buffer
+	printTemplateTo(&buf, template)
+
+	var result map[string]map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v", err)
+	}
+
+	// page: 有 constraints
+	pageEntry := result["page"]
+	constraints, ok := pageEntry["constraints"]
+	if !ok {
+		t.Fatal("page should have constraints")
+	}
+	cm := constraints.(map[string]interface{})
+	if cm["min"] != 1.0 {
+		t.Errorf("constraints.min = %v, want 1.0", cm["min"])
+	}
+	if cm["max"] != 100.0 {
+		t.Errorf("constraints.max = %v, want 100.0", cm["max"])
+	}
+
+	// keyword: 有 constraints
+	keywordEntry := result["keyword"]
+	kc := keywordEntry["constraints"].(map[string]interface{})
+	if kc["minLength"] != 2.0 { // JSON 数字解析为 float64
+		t.Errorf("constraints.minLength = %v, want 2", kc["minLength"])
+	}
+	if kc["maxLength"] != 50.0 {
+		t.Errorf("constraints.maxLength = %v, want 50", kc["maxLength"])
+	}
+	if kc["pattern"] != `^\w+$` {
+		t.Errorf("constraints.pattern = %v", kc["pattern"])
+	}
+}
