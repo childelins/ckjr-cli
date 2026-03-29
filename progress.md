@@ -664,3 +664,16 @@
 - go test ./...: 全部 17 个包测试通过
 - go vet ./cmd/ckjr-cli/: 无警告
 - go build ./cmd/ckjr-cli/: 编译成功
+
+## 2026-03-29 AI 友好错误处理 (续)
+
+### Task 6: root 命令统一 JSON 输出
+- Status: complete (7de2e98)
+- 提交已完成的 cmd/root.go 代码修改（fmt.Fprintf -> output.PrintError）
+- 全量测试通过
+
+### Task 7: 集成测试
+- Status: complete (cf77390)
+- 添加 TestHandleAPIErrorTo_Integration_ServerResponsePassthrough 表驱动测试
+- 4 个子测试: 403_forbidden, 500_server_error, 422_validation_with_field_errors, 502_gateway_non_json_verbose
+- 全量测试通过（17 个包），go vet 无警告

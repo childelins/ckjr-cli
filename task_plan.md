@@ -1439,3 +1439,76 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |------|---------|---------|
+
+---
+
+# AI 友好错误处理 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-29-ai-friendly-error-handling.md
+
+## 概述
+
+将服务端返回的原始 JSON response 结构原样透传到 stderr，使 AI 可靠解析错误。
+
+---
+
+## Task 1: 新增 APIError 类型
+
+- **Source**: Plan -> Task 1
+- **Status**: pending
+- **Description**: 在 internal/api/client.go 新增 APIError 类型和 IsAPIError 辅助函数
+
+---
+
+## Task 2: 替换 fmt.Errorf 为 APIError
+
+- **Source**: Plan -> Task 2
+- **Status**: pending
+- **Description**: 替换 client.go 第 279 行 fmt.Errorf 为 APIError，更新 TestClientDo_Non2xxWithJSON 测试
+
+---
+
+## Task 3: 新增 GetValidationMessage getter
+
+- **Source**: Plan -> Task 3
+- **Status**: pending
+- **Description**: 在 api 包添加 GetValidationMessage 函数
+
+---
+
+## Task 4: 重写 handleAPIErrorTo 输出结构化 JSON
+
+- **Source**: Plan -> Task 4
+- **Status**: pending
+- **Description**: 重写 cmdgen.go 中 handleAPIErrorTo 使用 output.Print 输出结构化 JSON
+
+---
+
+## Task 5: config 命令统一 JSON 输出
+
+- **Source**: Plan -> Task 5
+- **Status**: pending
+- **Description**: 替换 cmd/config/config.go 中 fmt.Fprintf 为 output.PrintError
+
+---
+
+## Task 6: root 命令统一 JSON 输出
+
+- **Source**: Plan -> Task 6
+- **Status**: complete (7de2e98)
+- **Description**: 替换 cmd/root.go 中 fmt.Fprintf 为 output.PrintError
+
+---
+
+## Task 7: 集成测试
+
+- **Source**: Plan -> Task 7
+- **Status**: complete (cf77390)
+- **Description**: 添加端到端集成测试验证完整错误链路
+
+---
+
+## 遇到的错误 (AI 友好错误处理)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|

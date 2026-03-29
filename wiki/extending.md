@@ -20,9 +20,14 @@ routes:
                 required: false
                 default: 1
                 type: int
-            name:
-                description: 名称
+                min: 1           # 最小值（适用于 int/float）
+                max: 1000        # 最大值（适用于 int/float）
+            keyword:
+                description: 搜索关键词
                 required: false
+                type: string
+                minLength: 1     # 最小长度（适用于 string）
+                maxLength: 100   # 最大长度（适用于 string）
     create:
         method: POST
         path: /admin/example/create
@@ -31,10 +36,41 @@ routes:
             name:
                 description: 名称
                 required: true
+                type: string
+                minLength: 1
+                maxLength: 50
+            email:
+                description: 邮箱
+                required: true
+                type: string
+                pattern: "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"  # 正则约束
+            score:
+                description: 评分
+                required: false
+                type: float
+                min: 0.0
+                max: 10.0
             desc:
                 description: 描述
                 required: false
 ```
+
+### template 字段完整属性
+
+| 属性 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `description` | string | 是 | 字段描述 |
+| `required` | bool | 是 | 是否必填 |
+| `default` | any | 否 | 默认值 |
+| `type` | string | 否 | 类型：string/int/float/bool/array。设置后运行时校验 |
+| `example` | string | 否 | 示例值 |
+| `min` | number | 否 | 最小值（适用于 type: int/float） |
+| `max` | number | 否 | 最大值（适用于 type: int/float） |
+| `minLength` | number | 否 | 最小长度（适用于 type: string） |
+| `maxLength` | number | 否 | 最大长度（适用于 type: string） |
+| `pattern` | string | 否 | 正则表达式（适用于 type: string） |
+
+约束与 type 不匹配时会被静默忽略（如对 string 设置 min），方便后续调整 type 时保留约束。
 
 ### 真实示例
 
