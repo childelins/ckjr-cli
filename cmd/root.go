@@ -12,6 +12,7 @@ import (
 	internalconfig "github.com/childelins/ckjr-cli/internal/config"
 	configyaml "github.com/childelins/ckjr-cli/internal/config/yaml"
 	"github.com/childelins/ckjr-cli/internal/logging"
+	"github.com/childelins/ckjr-cli/internal/output"
 	"github.com/childelins/ckjr-cli/internal/router"
 
 	configcmd "github.com/childelins/ckjr-cli/cmd/config"
@@ -74,35 +75,32 @@ func initLogging() {
 	verbose, _ := rootCmd.Flags().GetBool("verbose")
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "获取用户目录失败: %v\n", err)
+		output.PrintError(os.Stderr, fmt.Sprintf("获取用户目录失败: %v", err))
 		return
 	}
 	baseDir := filepath.Join(homeDir, ".ckjr")
 	env := logging.ParseEnvironment(environment)
 	if err := logging.Init(verbose, baseDir, env); err != nil {
-		fmt.Fprintf(os.Stderr, "日志初始化失败: %v\n", err)
+		output.PrintError(os.Stderr, fmt.Sprintf("日志初始化失败: %v", err))
 	}
 }
 
 func registerRouteCommands() {
 	if yamlFS == nil {
-		fmt.Fprintf(os.Stderr, "YAML 文件系统未初始化\n")
+		output.PrintError(os.Stderr, "YAML 文件系统未初始化")
 		return
 	}
-
 	files, err := yamlFS.LoadRoutes()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "读取路由目录失败: %v\n", err)
+		output.PrintError(os.Stderr, fmt.Sprintf("读取路由目录失败: %v", err))
 		return
 	}
-
 	for name, data := range files {
 		cfg, err := router.Parse(data)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "解析路由文件 %s 失败: %v\n", name, err)
+			output.PrintError(os.Stderr, fmt.Sprintf("解析路由文件 %s 失败: %v", name, err))
 			continue
 		}
-
 		cmd := cmdgen.BuildCommand(cfg, createClient)
 		rootCmd.AddCommand(cmd)
 	}
