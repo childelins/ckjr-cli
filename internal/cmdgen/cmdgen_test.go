@@ -3,6 +3,7 @@ package cmdgen
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -112,8 +113,13 @@ func TestHandleAPIError_ResponseError(t *testing.T) {
 	if !strings.Contains(got, "服务端返回异常") {
 		t.Errorf("output should contain friendly message, got: %s", got)
 	}
-	if strings.Contains(got, "text/html") {
-		t.Error("non-verbose should not contain Content-Type")
+	// 非verbose不应包含body字段
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(got), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q", got)
+	}
+	if _, exists := result["body"]; exists {
+		t.Error("non-verbose should not contain body field")
 	}
 }
 
@@ -290,5 +296,157 @@ func TestPrintTemplate_Constraints(t *testing.T) {
 	}
 	if kc["pattern"] != `^\w+$` {
 		t.Errorf("constraints.pattern = %v", kc["pattern"])
+	}
+}
+
+func TestHandleAPIErrorTo_Unauthorized_StructuredJSON(t *testing.T) {
+	var buf bytes.Buffer
+	handleAPIErrorTo(&buf, api.ErrUnauthorized, false)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
+	}
+	if result["message"] != "api_key 已过期，请重新登录获取" {
+		t.Errorf("message = %v, want api_key 已过期", result["message"])
+	}
+	if result["status_code"] != float64(401) {
+		t.Errorf("status_code = %v, want 401", result["status_code"])
+	}
+}
+
+func TestHandleAPIErrorTo_ValidationError_StructuredJSON(t *testing.T) {
+	var buf bytes.Buffer
+	err := &api.ValidationError{
+		Message: "参数校验失败",
+		Errors:  map[string]interface{}{"name": []interface{}{"required"}},
+	}
+	handleAPIErrorTo(&buf, err, false)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
+	}
+	if result["message"] != "参数校验失败" {
+		t.Errorf("message = %v, want 参数校验失败", result["message"])
+	}
+	if result["status_code"] != float64(422) {
+		t.Errorf("status_code = %v, want 422", result["status_code"])
+	}
+	// errors 字段应该是 map 而非字符串
+	errorsMap, ok := result["errors"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("errors should be a map, got %T: %v", result["errors"], result["errors"])
+	}
+	nameErrors, ok := errorsMap["name"].([]interface{})
+	if !ok || len(nameErrors) == 0 || nameErrors[0] != "required" {
+		t.Errorf("errors.name = %v, want [required]", errorsMap["name"])
+	}
+}
+
+func TestHandleAPIErrorTo_APIError_StructuredJSON(t *testing.T) {
+	var buf bytes.Buffer
+	err := &api.APIError{
+		StatusCode: 403,
+		Message:    "无权访问",
+		ServerCode: 403,
+	}
+	handleAPIErrorTo(&buf, err, false)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
+	}
+	if result["message"] != "无权访问" {
+		t.Errorf("message = %v, want 无权访问", result["message"])
+	}
+	if result["status_code"] != float64(403) {
+		t.Errorf("status_code = %v, want 403", result["status_code"])
+	}
+}
+
+func TestHandleAPIErrorTo_APIError_WithErrors(t *testing.T) {
+	var buf bytes.Buffer
+	err := &api.APIError{
+		StatusCode: 402,
+		Message:    "余额不足",
+		ServerCode: 402,
+		Errors:     map[string]interface{}{"detail": "账户余额为0"},
+	}
+	handleAPIErrorTo(&buf, err, false)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
+	}
+	if result["status_code"] != float64(402) {
+		t.Errorf("status_code = %v, want 402", result["status_code"])
+	}
+	errorsMap, ok := result["errors"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("errors should be a map, got %T", result["errors"])
+	}
+	if errorsMap["detail"] != "账户余额为0" {
+		t.Errorf("errors.detail = %v", errorsMap["detail"])
+	}
+}
+
+func TestHandleAPIErrorTo_ResponseError_StructuredJSON(t *testing.T) {
+	var buf bytes.Buffer
+	respErr := &api.ResponseError{
+		StatusCode:  502,
+		ContentType: "text/html",
+		Body:        "<html>Bad Gateway</html>",
+		Message:     "服务端返回异常 (HTTP 502)",
+	}
+	handleAPIErrorTo(&buf, respErr, false)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
+	}
+	if result["status_code"] != float64(502) {
+		t.Errorf("status_code = %v, want 502", result["status_code"])
+	}
+	if result["content_type"] != "text/html" {
+		t.Errorf("content_type = %v, want text/html", result["content_type"])
+	}
+	// 非verbose不应包含body
+	if _, exists := result["body"]; exists {
+		t.Error("non-verbose should not contain body field")
+	}
+}
+
+func TestHandleAPIErrorTo_ResponseError_Verbose_StructuredJSON(t *testing.T) {
+	var buf bytes.Buffer
+	respErr := &api.ResponseError{
+		StatusCode:  502,
+		ContentType: "text/html",
+		Body:        "<html>Bad Gateway</html>",
+		Message:     "服务端返回异常 (HTTP 502)",
+	}
+	handleAPIErrorTo(&buf, respErr, true)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
+	}
+	if result["body"] != "<html>Bad Gateway</html>" {
+		t.Errorf("verbose should contain body, got: %v", result["body"])
+	}
+}
+
+func TestHandleAPIErrorTo_GenericError_FlatJSON(t *testing.T) {
+	var buf bytes.Buffer
+	err := fmt.Errorf("网络连接超时")
+	handleAPIErrorTo(&buf, err, false)
+
+	// 非 API 错误保持 {"error":"msg"} 格式
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
+	}
+	if result["error"] != "网络连接超时" {
+		t.Errorf("error = %v, want 网络连接超时", result["error"])
 	}
 }

@@ -197,25 +197,58 @@ func handleAPIError(err error, verbose bool) {
 }
 
 func handleAPIErrorTo(w io.Writer, err error, verbose bool) {
+	// 1. Unauthorized -- 构造类似服务端格式的 JSON
 	if api.IsUnauthorized(err) {
-		output.PrintError(w, "api_key 已过期，请重新登录获取")
+		resp := map[string]interface{}{
+			"message":     "api_key 已过期，请重新登录获取",
+			"status_code": 401,
+		}
+		output.Print(w, resp, false)
 		return
 	}
 
+	// 2. ValidationError -- 透传服务端原始结构
 	if api.IsValidationError(err) {
 		errs := api.GetValidationErrors(err)
-		output.PrintError(w, fmt.Sprintf("参数校验失败: %v", errs))
+		msg := api.GetValidationMessage(err)
+		resp := map[string]interface{}{
+			"message":     msg,
+			"status_code": 422,
+			"errors":      errs,
+		}
+		output.Print(w, resp, false)
 		return
 	}
 
+	// 3. APIError -- 透传服务端原始结构
+	var apiErr *api.APIError
+	if errors.As(err, &apiErr) {
+		resp := map[string]interface{}{
+			"message":     apiErr.Message,
+			"status_code": apiErr.ServerCode,
+		}
+		if len(apiErr.Errors) > 0 {
+			resp["errors"] = apiErr.Errors
+		}
+		output.Print(w, resp, false)
+		return
+	}
+
+	// 4. ResponseError (非 JSON 响应) -- 构造结构化输出
 	var respErr *api.ResponseError
 	if errors.As(err, &respErr) {
-		output.PrintError(w, respErr.Error())
-		if verbose {
-			fmt.Fprintf(w, "  %s\n", respErr.Detail())
+		detail := map[string]interface{}{
+			"message":      respErr.Error(),
+			"status_code":  respErr.StatusCode,
+			"content_type": respErr.ContentType,
 		}
+		if verbose {
+			detail["body"] = respErr.Body
+		}
+		output.Print(w, detail, false)
 		return
 	}
 
+	// 5. 客户端侧错误（网络、序列化等）-- 保持简单格式
 	output.PrintError(w, err.Error())
 }
