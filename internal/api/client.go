@@ -343,6 +343,15 @@ func GetValidationErrors(err error) map[string]interface{} {
 	return nil
 }
 
+// GetValidationMessage 获取验证错误的消息
+func GetValidationMessage(err error) string {
+	var ve *ValidationError
+	if errors.As(err, &ve) {
+		return ve.Message
+	}
+	return ""
+}
+
 // IsResponseError 检查是否是非预期响应错误
 func IsResponseError(err error) bool {
 	var re *ResponseError

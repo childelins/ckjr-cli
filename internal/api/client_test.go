@@ -595,6 +595,22 @@ func TestIsAPIError(t *testing.T) {
 	}
 }
 
+func TestGetValidationMessage(t *testing.T) {
+	err := &ValidationError{
+		Message: "参数校验失败",
+		Errors:  map[string]interface{}{"name": "required"},
+	}
+	if got := GetValidationMessage(err); got != "参数校验失败" {
+		t.Errorf("GetValidationMessage() = %q, want %q", got, "参数校验失败")
+	}
+
+	// 非 ValidationError 返回空字符串
+	otherErr := fmt.Errorf("other")
+	if got := GetValidationMessage(otherErr); got != "" {
+		t.Errorf("GetValidationMessage() = %q, want empty", got)
+	}
+}
+
 // containsAll 检查 s 是否包含所有子串
 func containsAll(s string, subs ...string) bool {
 	for _, sub := range subs {
