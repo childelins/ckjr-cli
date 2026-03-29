@@ -189,12 +189,20 @@ func TestClientDo_Non2xxWithJSON(t *testing.T) {
 	if err == nil {
 		t.Fatal("Do() should return error for 500")
 	}
-	// 500 + JSON 应走现有错误处理，不是 ResponseError
-	if IsResponseError(err) {
-		t.Error("500 with JSON should not be ResponseError")
+
+	// 500 + JSON 应返回 APIError
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error should be APIError, got %T: %v", err, err)
 	}
-	if !strings.Contains(err.Error(), "internal error") {
-		t.Errorf("error should contain API message, got: %v", err)
+	if apiErr.StatusCode != 500 {
+		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+	}
+	if apiErr.Message != "internal error" {
+		t.Errorf("Message = %q, want %q", apiErr.Message, "internal error")
+	}
+	if apiErr.ServerCode != 500 {
+		t.Errorf("ServerCode = %d, want 500", apiErr.ServerCode)
 	}
 }
 

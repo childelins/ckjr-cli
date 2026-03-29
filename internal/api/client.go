@@ -288,7 +288,12 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 			errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
 		}
 		slog.ErrorContext(ctx, "api_response", errAttrs...)
-		return fmt.Errorf("API 错误 (%d): %s", resp.StatusCode, apiResp.Message)
+		return &APIError{
+			StatusCode: resp.StatusCode,
+			Message:    apiResp.Message,
+			ServerCode: apiResp.StatusCode,
+			Errors:     apiResp.Errors,
+		}
 	}
 
 	// 5. 成功日志
