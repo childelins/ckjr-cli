@@ -40,7 +40,7 @@ func RequestIDFrom(ctx context.Context) string {
 type Environment int
 
 const (
-	Production  Environment = iota // 生产环境：INFO 级别，不记录 body
+	Production  Environment = iota // 生产环境：ERROR 级别，不记录 body
 	Development                    // 开发环境：DEBUG 级别，记录完整 body
 )
 
@@ -63,7 +63,7 @@ func IsDev() bool {
 // Init 初始化日志系统
 // baseDir 为日志根目录（生产环境传 ~/.ckjr，测试传 t.TempDir()）
 // verbose=true 时额外输出到 stderr（不受 env 影响）
-// env 控制日志级别：development=DEBUG，production=INFO
+// env 控制日志文件级别：development=DEBUG，production=ERROR
 func Init(verbose bool, baseDir string, env Environment) error {
 	currentEnv = env
 
@@ -78,7 +78,7 @@ func Init(verbose bool, baseDir string, env Environment) error {
 		return fmt.Errorf("打开日志文件失败: %w", err)
 	}
 
-	level := slog.LevelInfo
+	level := slog.LevelError
 	if env == Development {
 		level = slog.LevelDebug
 	}
@@ -86,7 +86,7 @@ func Init(verbose bool, baseDir string, env Environment) error {
 	fileHandler := slog.NewJSONHandler(file, &slog.HandlerOptions{Level: level})
 
 	if verbose {
-		stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+		stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})
 		slog.SetDefault(slog.New(newMultiHandler(fileHandler, stderrHandler)))
 	} else {
 		slog.SetDefault(slog.New(fileHandler))

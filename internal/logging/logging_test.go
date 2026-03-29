@@ -168,9 +168,10 @@ func TestInit_ProdLogLevel(t *testing.T) {
 	today := time.Now().Format("2006-01-02")
 	logFile := filepath.Join(tmpDir, "logs", today+".log")
 
-	// DEBUG 级别日志不应被记录
+	// 生产环境文件只记录 ERROR
 	slog.Debug("debug message")
 	slog.Info("info message")
+	slog.Error("error message")
 
 	data, err := os.ReadFile(logFile)
 	if err != nil {
@@ -180,8 +181,11 @@ func TestInit_ProdLogLevel(t *testing.T) {
 	if strings.Contains(content, "debug message") {
 		t.Error("prod mode should NOT log DEBUG messages")
 	}
-	if !strings.Contains(content, "info message") {
-		t.Error("prod mode should log INFO messages")
+	if strings.Contains(content, "info message") {
+		t.Error("prod mode should NOT log INFO messages")
+	}
+	if !strings.Contains(content, "error message") {
+		t.Error("prod mode should log ERROR messages")
 	}
 }
 
