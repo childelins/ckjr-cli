@@ -60,7 +60,7 @@ func runConfigInit(cmd *cobra.Command, args []string) {
 		APIKey:  apiKey,
 	}
 	if err := internalconfig.Save(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "保存配置失败: %v\n", err)
+		output.PrintError(os.Stderr, fmt.Sprintf("保存配置失败: %v", err))
 		os.Exit(1)
 	}
 	fmt.Println("\n配置已保存到:", internalconfig.ConfigPath)
@@ -71,7 +71,7 @@ func runConfigSet(cmd *cobra.Command, args []string) {
 	value := args[1]
 	validKeys := map[string]bool{"base_url": true, "api_key": true}
 	if !validKeys[key] {
-		fmt.Fprintf(os.Stderr, "无效的配置项: %s\n合法值: base_url, api_key\n", key)
+		output.PrintError(os.Stderr, fmt.Sprintf("无效的配置项: %s。合法值: base_url, api_key", key))
 		os.Exit(1)
 	}
 	cfg, err := internalconfig.Load()
@@ -85,7 +85,7 @@ func runConfigSet(cmd *cobra.Command, args []string) {
 		cfg.APIKey = value
 	}
 	if err := internalconfig.Save(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "保存配置失败: %v\n", err)
+		output.PrintError(os.Stderr, fmt.Sprintf("保存配置失败: %v", err))
 		os.Exit(1)
 	}
 	fmt.Printf("已设置 %s\n", key)
@@ -94,7 +94,7 @@ func runConfigSet(cmd *cobra.Command, args []string) {
 func runConfigShow(cmd *cobra.Command, args []string) {
 	cfg, err := internalconfig.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "读取配置失败: %v\n请先执行 ckjr-cli config init\n", err)
+		output.PrintError(os.Stderr, fmt.Sprintf("读取配置失败: %v。请先执行 ckjr-cli config init", err))
 		os.Exit(1)
 	}
 	pretty, _ := cmd.Flags().GetBool("pretty")
