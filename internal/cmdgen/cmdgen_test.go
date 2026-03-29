@@ -450,3 +450,78 @@ func TestHandleAPIErrorTo_GenericError_FlatJSON(t *testing.T) {
 		t.Errorf("error = %v, want 网络连接超时", result["error"])
 	}
 }
+
+func TestHandleAPIErrorTo_Integration_ServerResponsePassthrough(t *testing.T) {
+	tests := []struct {
+		name       string
+		setupError error
+		verbose    bool
+		wantFields map[string]interface{}
+	}{
+		{
+			name:       "403_forbidden",
+			setupError: &api.APIError{StatusCode: 403, Message: "无权访问", ServerCode: 403},
+			wantFields: map[string]interface{}{
+				"message":     "无权访问",
+				"status_code": float64(403),
+			},
+		},
+		{
+			name:       "500_server_error",
+			setupError: &api.APIError{StatusCode: 500, Message: "内部错误", ServerCode: 500},
+			wantFields: map[string]interface{}{
+				"message":     "内部错误",
+				"status_code": float64(500),
+			},
+		},
+		{
+			name: "422_validation_with_field_errors",
+			setupError: &api.ValidationError{
+				Message: "参数校验失败",
+				Errors:  map[string]interface{}{"name": "required"},
+			},
+			wantFields: map[string]interface{}{
+				"message":     "参数校验失败",
+				"status_code": float64(422),
+			},
+		},
+		{
+			name: "502_gateway_non_json_verbose",
+			setupError: &api.ResponseError{
+				StatusCode:  502,
+				ContentType: "text/html",
+				Body:        "Bad Gateway",
+				Message:     "服务端返回异常 (HTTP 502)",
+			},
+			verbose: true,
+			wantFields: map[string]interface{}{
+				"message":      "服务端返回异常 (HTTP 502)",
+				"status_code":  float64(502),
+				"content_type": "text/html",
+				"body":         "Bad Gateway",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			handleAPIErrorTo(&buf, tt.setupError, tt.verbose)
+
+			var result map[string]interface{}
+			if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+				t.Fatalf("output should be valid JSON, got: %q", buf.String())
+			}
+			for key, wantVal := range tt.wantFields {
+				gotVal, ok := result[key]
+				if !ok {
+					t.Errorf("missing field %q in output: %v", key, result)
+					continue
+				}
+				if gotVal != wantVal {
+					t.Errorf("field %q = %v, want %v", key, gotVal, wantVal)
+				}
+			}
+		})
+	}
+}
