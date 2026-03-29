@@ -531,6 +531,62 @@ func TestDoCtx_ProdOmitsBody(t *testing.T) {
 	}
 }
 
+func TestAPIError(t *testing.T) {
+	err := &APIError{
+		StatusCode: 403,
+		Message:    "无权访问",
+		ServerCode: 403,
+		Errors:     map[string]interface{}{"detail": "权限不足"},
+	}
+
+	// 验证 Error() 字符串
+	want := "API 错误 (403): 无权访问"
+	if got := err.Error(); got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+
+	// 验证 errors.As 匹配
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Error("errors.As should match APIError")
+	}
+	if apiErr.StatusCode != 403 {
+		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
+	}
+	if apiErr.Message != "无权访问" {
+		t.Errorf("Message = %q, want %q", apiErr.Message, "无权访问")
+	}
+	if apiErr.ServerCode != 403 {
+		t.Errorf("ServerCode = %d, want 403", apiErr.ServerCode)
+	}
+	if apiErr.Errors["detail"] != "权限不足" {
+		t.Errorf("Errors = %v, want detail=权限不足", apiErr.Errors)
+	}
+}
+
+func TestAPIError_NilErrors(t *testing.T) {
+	err := &APIError{
+		StatusCode: 500,
+		Message:    "internal error",
+		ServerCode: 500,
+	}
+	if err.Errors != nil {
+		t.Errorf("Errors should be nil when not set, got %v", err.Errors)
+	}
+}
+
+func TestIsAPIError(t *testing.T) {
+	apiErr := &APIError{StatusCode: 402, Message: "余额不足", ServerCode: 402}
+	if !IsAPIError(apiErr) {
+		t.Error("IsAPIError should return true for APIError")
+	}
+
+	otherErr := fmt.Errorf("some error")
+	if IsAPIError(otherErr) {
+		t.Error("IsAPIError should return false for non-APIError")
+	}
+}
+
 // containsAll 检查 s 是否包含所有子串
 func containsAll(s string, subs ...string) bool {
 	for _, sub := range subs {

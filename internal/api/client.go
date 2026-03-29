@@ -71,6 +71,18 @@ func (e *ResponseError) Detail() string {
 	return fmt.Sprintf("HTTP %d | Content-Type: %s\n响应体: %s", e.StatusCode, e.ContentType, e.Body)
 }
 
+// APIError 服务端返回的业务错误（JSON 格式，如 402/403/500 等）
+type APIError struct {
+	StatusCode int                    // HTTP 状态码
+	Message    string                 // 服务端 message 字段
+	ServerCode int                    // 服务端 status_code 字段
+	Errors     map[string]interface{} // 服务端 errors 字段
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("API 错误 (%d): %s", e.StatusCode, e.Message)
+}
+
 // Client API 客户端
 type Client struct {
 	baseURL string
@@ -330,6 +342,12 @@ func GetValidationErrors(err error) map[string]interface{} {
 func IsResponseError(err error) bool {
 	var re *ResponseError
 	return errors.As(err, &re)
+}
+
+// IsAPIError 检查是否是 API 业务错误
+func IsAPIError(err error) bool {
+	var ae *APIError
+	return errors.As(err, &ae)
 }
 
 // isJSONContentType 检查 Content-Type 是否包含 application/json
