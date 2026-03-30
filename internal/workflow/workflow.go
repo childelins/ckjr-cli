@@ -26,8 +26,9 @@ type Workflow struct {
 	Description string   `yaml:"description"`
 	Triggers    []string `yaml:"triggers"`
 	Inputs      []Input  `yaml:"inputs"`
-	Steps       []Step   `yaml:"steps"`
-	Summary     string   `yaml:"summary,omitempty"`
+	Steps         []Step   `yaml:"steps"`
+	AllowedRoutes []string `yaml:"allowed-routes,omitempty"`
+	Summary       string   `yaml:"summary,omitempty"`
 }
 
 type Config struct {
@@ -49,6 +50,12 @@ func Describe(wf *Workflow, name string) string {
 
 	fmt.Fprintf(&b, "Workflow: %s\n", name)
 	fmt.Fprintf(&b, "Description: %s\n", wf.Description)
+
+	// Allowed routes
+	if len(wf.AllowedRoutes) > 0 {
+		fmt.Fprintf(&b, "\n== 路由权限 ==\n")
+		fmt.Fprintf(&b, "仅允许调用以下模块的路由: %s\n", strings.Join(wf.AllowedRoutes, ", "))
+	}
 
 	// Inputs
 	b.WriteString("\n== 需要收集的信息 ==\n")

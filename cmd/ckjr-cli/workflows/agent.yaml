@@ -8,6 +8,9 @@ workflows:
       - 创建智能体
       - 新建智能体
       - 创建一个AI助手
+    allowed-routes:
+      - agent
+      - common
     inputs:
       - name: name
         description: 智能体名称
