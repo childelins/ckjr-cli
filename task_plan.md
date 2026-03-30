@@ -1512,3 +1512,45 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |------|---------|---------|
+
+---
+---
+
+# 生产环境静默 HTTP 请求日志 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-29-prod-silent-http-logging.md
+
+## 概述
+
+生产环境日志文件只记录 ERROR 级别，`--verbose` stderr 统一输出 INFO 级别（不受 env 影响）。
+
+---
+
+## Phase 1: 修改 TestInit_ProdLogLevel 测试
+
+- **Source**: Plan -> Task 1, Step 1
+- **Status**: complete (449b8dc)
+- **Description**: 更新 TestInit_ProdLogLevel 测试，断言生产环境文件只记录 ERROR，不记录 DEBUG 和 INFO
+
+---
+
+## Phase 2: 修改 logging.go 实现
+
+- **Source**: Plan -> Task 1, Step 3
+- **Status**: complete (449b8dc)
+- **Description**: 生产环境 level 改为 slog.LevelError，verbose stderr handler 使用独立的 slog.LevelInfo
+
+---
+
+## Phase 3: 验证与提交
+
+- **Source**: Plan -> Task 1, Step 4-7
+- **Status**: complete (449b8dc)
+- **Description**: 运行全部测试确认无回归，提交变更
+
+---
+
+## 遇到的错误 (生产环境静默日志)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|

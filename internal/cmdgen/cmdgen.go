@@ -175,9 +175,20 @@ func printTemplateTo(w io.Writer, template map[string]router.Field) {
 func applyDefaults(input map[string]interface{}, template map[string]router.Field) {
 	for name, field := range template {
 		if _, exists := input[name]; !exists && field.Default != nil {
-			input[name] = field.Default
+			input[name] = normalizeDefault(field.Default)
 		}
 	}
+}
+
+// normalizeDefault 将 YAML 解析的整数默认值转为 float64，与 JSON 反序列化保持一致
+func normalizeDefault(val interface{}) interface{} {
+	switch v := val.(type) {
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	}
+	return val
 }
 
 func validateRequired(input map[string]interface{}, template map[string]router.Field) []string {
@@ -200,8 +211,8 @@ func handleAPIErrorTo(w io.Writer, err error, verbose bool) {
 	// 1. Unauthorized -- 构造类似服务端格式的 JSON
 	if api.IsUnauthorized(err) {
 		resp := map[string]interface{}{
-			"message":     "api_key 已过期，请重新登录获取",
-			"status_code": 401,
+			"msg":        "api_key 已过期，请重新登录获取",
+			"statusCode": 401,
 		}
 		output.Print(w, resp, false)
 		return
@@ -212,9 +223,9 @@ func handleAPIErrorTo(w io.Writer, err error, verbose bool) {
 		errs := api.GetValidationErrors(err)
 		msg := api.GetValidationMessage(err)
 		resp := map[string]interface{}{
-			"message":     msg,
-			"status_code": 422,
-			"errors":      errs,
+			"msg":        msg,
+			"statusCode": 422,
+			"errors":     errs,
 		}
 		output.Print(w, resp, false)
 		return
@@ -224,8 +235,8 @@ func handleAPIErrorTo(w io.Writer, err error, verbose bool) {
 	var apiErr *api.APIError
 	if errors.As(err, &apiErr) {
 		resp := map[string]interface{}{
-			"message":     apiErr.Message,
-			"status_code": apiErr.ServerCode,
+			"msg":        apiErr.Message,
+			"statusCode": apiErr.ServerCode,
 		}
 		if len(apiErr.Errors) > 0 {
 			resp["errors"] = apiErr.Errors
@@ -238,8 +249,8 @@ func handleAPIErrorTo(w io.Writer, err error, verbose bool) {
 	var respErr *api.ResponseError
 	if errors.As(err, &respErr) {
 		detail := map[string]interface{}{
-			"message":      respErr.Error(),
-			"status_code":  respErr.StatusCode,
+			"msg":          respErr.Error(),
+			"statusCode":   respErr.StatusCode,
 			"content_type": respErr.ContentType,
 		}
 		if verbose {

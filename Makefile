@@ -13,20 +13,24 @@ GITHUB_REMOTE := github
 # 目标平台列表
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
-.PHONY: build build-local release clean version check-gh check-clean check-github-remote
+.PHONY: test build build-local release clean version check-gh check-clean check-github-remote
 
 # 打印版本号
 version:
 	@echo $(VERSION)
 
+# 运行测试
+test:
+	go test ./...
+
 # 仅当前平台编译
-build-local:
+build-local: test
 	@mkdir -p $(BUILD_DIR)
 	go build -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_PATH)
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME) ($(VERSION))"
 
 # 多平台交叉编译
-build: clean
+build: test clean
 	@echo "Building $(BINARY_NAME) $(VERSION) for all platforms..."
 	@for platform in $(PLATFORMS); do \
 		GOOS=$${platform%/*}; \
@@ -65,7 +69,7 @@ check-github-remote:
 		 exit 1)
 
 # 全自动发布
-release: check-gh check-clean check-github-remote
+release: test check-gh check-clean check-github-remote
 	@if [ "$(VERSION)" = "dev" ]; then \
 		echo "Error: VERSION is required. Usage: make release VERSION=v0.1.0"; \
 		exit 1; \

@@ -12,7 +12,8 @@ tags: [logging, slog, ldflags, environment, go-build]
 | 决策点 | 选择 | 原因 |
 |--------|------|------|
 | 环境区分方式 | `go build -ldflags` 编译期注入 | CLI 工具不支持运行时配置切换，编译期注入最简且安全 |
-| 区分维度 | 日志级别 + 内容详细度 | 开发需要 DEBUG+完整 body，生产只需 INFO+省略 body |
+| 区分维度 | 日志级别 + 内容详细度 | 开发需要 DEBUG+完整 body，生产只需 ERROR（不记录请求日志） |
+| verbose stderr 级别 | 固定 `slog.LevelInfo`，不受 env 影响 | 生产环境用户仍需在终端看到请求进度，固定 INFO 确保可见性 |
 | 全局状态管理 | 包级变量 `currentEnv` | 最简方案，避免引入配置结构体；`Init` 在 `cobra.OnInitialize` 中调用，时序安全 |
 | `IsDev()` 作为包级函数 | 供 api 包直接调用 | 不需要传递 env 参数跨多层调用 |
 
@@ -44,4 +45,17 @@ if logging.IsDev() {
     attrs = append(attrs, "body", bodyContent)
 }
 slog.InfoContext(ctx, "message", attrs...)
+
+// verbose stderr handler 独立级别（不受 env 影响）
+level := slog.LevelError          // 生产默认 ERROR
+if env == Development {
+    level = slog.LevelDebug       // 开发默认 DEBUG
+}
+fileHandler := slog.NewJSONHandler(file, &slog.HandlerOptions{Level: level})
+
+if verbose {
+    // stderr 始终 INFO，确保用户在任何环境都能看到请求进度
+    stderrHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})
+    slog.SetDefault(slog.New(newMultiHandler(fileHandler, stderrHandler)))
+}
 ```

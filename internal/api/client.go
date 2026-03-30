@@ -36,11 +36,11 @@ var ErrUnauthorized = errors.New("api_key 已过期，请重新登录获取")
 // ErrValidation 参数校验失败
 var ErrValidation = errors.New("参数校验失败")
 
-// Response Dingo API 响应格式
+// Response API 响应格式
 type Response struct {
 	Data       interface{}            `json:"data"`
-	Message    string                 `json:"message"`
-	StatusCode int                    `json:"status_code"`
+	Message    string                 `json:"msg"`
+	StatusCode int                    `json:"statusCode"`
 	Errors     map[string]interface{} `json:"errors,omitempty"`
 }
 
@@ -276,6 +276,28 @@ func (c *Client) DoCtx(ctx context.Context, method, path string, body interface{
 	}
 
 	if resp.StatusCode >= 400 {
+		errAttrs := []interface{}{
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+			"error", apiResp.Message,
+		}
+		if logging.IsDev() {
+			errAttrs = append(errAttrs, "response_body", readableJSON(bodyBytes))
+		}
+		slog.ErrorContext(ctx, "api_response", errAttrs...)
+		return &APIError{
+			StatusCode: resp.StatusCode,
+			Message:    apiResp.Message,
+			ServerCode: apiResp.StatusCode,
+			Errors:     apiResp.Errors,
+		}
+	}
+
+	// 4.5 HTTP 200 但 body 中业务码为错误（部分 API 用 HTTP 200 + body statusCode 报错）
+	if apiResp.StatusCode >= 400 {
 		errAttrs := []interface{}{
 			"request_id", requestID,
 			"method", method,

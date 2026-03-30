@@ -16,6 +16,7 @@ tags: [日志, slog, requestId, context, Go]
 | requestId 传递 | `context.Context` value | Go 惯例，与 `http.NewRequestWithContext` 天然集成 |
 | 日志输出 | JSON 文件 `~/.ckjr/logs/YYYY-MM-DD.log` | 结构化便于 grep，按天自然轮转 |
 | verbose 模式 | 自实现 multiHandler | slog 标准库不提供多 handler 分发 |
+| verbose stderr 级别 | 固定 INFO，不受 env 影响 | 生产环境用户仍需在终端看到请求进度 |
 | 向后兼容 | `Do()` 委托 `DoCtx()` | 现有调用方零修改，新代码用 `DoCtx()` |
 
 ## 坑点预警
@@ -41,7 +42,7 @@ client.DoCtx(ctx, method, path, body, &result)
 cobra.OnInitialize(func() {
     verbose, _ := rootCmd.Flags().GetBool("verbose")
     baseDir := filepath.Join(homeDir, ".ckjr")
-    logging.Init(verbose, baseDir)
+    logging.Init(verbose, baseDir, logging.Environment(env))
 })
 
 // 按 requestId 查本地日志

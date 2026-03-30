@@ -211,7 +211,7 @@ func TestClientDo_EmptyContentType(t *testing.T) {
 		// 清除 Content-Type，返回合法 JSON
 		w.Header()["Content-Type"] = nil
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"data":{"key":"value"},"message":"ok","status_code":200}`))
+		w.Write([]byte(`{"data":{"key":"value"},"msg":"ok","statusCode":200}`))
 	}))
 	defer server.Close()
 
@@ -608,6 +608,47 @@ func TestGetValidationMessage(t *testing.T) {
 	otherErr := fmt.Errorf("other")
 	if got := GetValidationMessage(otherErr); got != "" {
 		t.Errorf("GetValidationMessage() = %q, want empty", got)
+	}
+}
+
+func TestResponse_UnmarshalJSON(t *testing.T) {
+	input := `{"data":{"id":"1"},"msg":"ok","statusCode":200}`
+	var resp Response
+	if err := json.Unmarshal([]byte(input), &resp); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if resp.Message != "ok" {
+		t.Errorf("Message = %q, want %q", resp.Message, "ok")
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("StatusCode = %d, want 200", resp.StatusCode)
+	}
+}
+
+func TestClientDo_BusinessError(t *testing.T) {
+	// HTTP 200 但 body 里业务码为 402
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"ext":{"s":"abc"},"msg":"未找到该用户","statusCode":402}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	var result interface{}
+	err := client.Do("POST", "/test", nil, &result)
+	if err == nil {
+		t.Fatal("Do() should return error for business status 402")
+	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error should be APIError, got %T: %v", err, err)
+	}
+	if apiErr.ServerCode != 402 {
+		t.Errorf("ServerCode = %d, want 402", apiErr.ServerCode)
+	}
+	if apiErr.Message != "未找到该用户" {
+		t.Errorf("Message = %q, want %q", apiErr.Message, "未找到该用户")
 	}
 }
 

@@ -271,3 +271,65 @@ func TestValidateAll_Pass(t *testing.T) {
 		t.Errorf("expected 0 errors, got %d: %v", len(errs), errs)
 	}
 }
+
+func TestApplyDefaults_IntNormalization(t *testing.T) {
+	template := map[string]router.Field{
+		"page": {
+			Description: "页码",
+			Required:    false,
+			Default:     1,
+			Type:        "int",
+		},
+		"limit": {
+			Description: "每页数量",
+			Required:    false,
+			Default:     10,
+			Type:        "int",
+		},
+		"name": {
+			Description: "名称",
+			Required:    false,
+			Default:     "default",
+			Type:        "string",
+		},
+	}
+	input := map[string]interface{}{}
+
+	applyDefaults(input, template)
+
+	// 默认值应被转为 float64
+	if v, ok := input["page"].(float64); !ok || v != 1.0 {
+		t.Errorf("page: expected float64(1), got %T(%v)", input["page"], input["page"])
+	}
+	if v, ok := input["limit"].(float64); !ok || v != 10.0 {
+		t.Errorf("limit: expected float64(10), got %T(%v)", input["limit"], input["limit"])
+	}
+	// string 默认值不变
+	if v, ok := input["name"].(string); !ok || v != "default" {
+		t.Errorf("name: expected string(default), got %T(%v)", input["name"], input["name"])
+	}
+
+	// 应用默认值后应通过类型校验
+	errs := ValidateAll(input, template)
+	if len(errs) != 0 {
+		t.Errorf("expected 0 validation errors after defaults, got %d: %v", len(errs), errs)
+	}
+}
+
+func TestApplyDefaults_DoesNotOverrideUserInput(t *testing.T) {
+	template := map[string]router.Field{
+		"page": {
+			Default: 1,
+			Type:    "int",
+		},
+	}
+	input := map[string]interface{}{
+		"page": float64(5),
+	}
+
+	applyDefaults(input, template)
+
+	if v, ok := input["page"].(float64); !ok || v != 5.0 {
+		t.Errorf("page: expected float64(5), got %T(%v)", input["page"], input["page"])
+	}
+}

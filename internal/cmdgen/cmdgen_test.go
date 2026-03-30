@@ -307,11 +307,11 @@ func TestHandleAPIErrorTo_Unauthorized_StructuredJSON(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
 	}
-	if result["message"] != "api_key 已过期，请重新登录获取" {
-		t.Errorf("message = %v, want api_key 已过期", result["message"])
+	if result["msg"] != "api_key 已过期，请重新登录获取" {
+		t.Errorf("msg = %v, want api_key 已过期", result["msg"])
 	}
-	if result["status_code"] != float64(401) {
-		t.Errorf("status_code = %v, want 401", result["status_code"])
+	if result["statusCode"] != float64(401) {
+		t.Errorf("statusCode = %v, want 401", result["statusCode"])
 	}
 }
 
@@ -327,11 +327,11 @@ func TestHandleAPIErrorTo_ValidationError_StructuredJSON(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
 	}
-	if result["message"] != "参数校验失败" {
-		t.Errorf("message = %v, want 参数校验失败", result["message"])
+	if result["msg"] != "参数校验失败" {
+		t.Errorf("msg = %v, want 参数校验失败", result["msg"])
 	}
-	if result["status_code"] != float64(422) {
-		t.Errorf("status_code = %v, want 422", result["status_code"])
+	if result["statusCode"] != float64(422) {
+		t.Errorf("statusCode = %v, want 422", result["statusCode"])
 	}
 	// errors 字段应该是 map 而非字符串
 	errorsMap, ok := result["errors"].(map[string]interface{})
@@ -357,11 +357,11 @@ func TestHandleAPIErrorTo_APIError_StructuredJSON(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
 	}
-	if result["message"] != "无权访问" {
-		t.Errorf("message = %v, want 无权访问", result["message"])
+	if result["msg"] != "无权访问" {
+		t.Errorf("msg = %v, want 无权访问", result["msg"])
 	}
-	if result["status_code"] != float64(403) {
-		t.Errorf("status_code = %v, want 403", result["status_code"])
+	if result["statusCode"] != float64(403) {
+		t.Errorf("statusCode = %v, want 403", result["statusCode"])
 	}
 }
 
@@ -379,8 +379,8 @@ func TestHandleAPIErrorTo_APIError_WithErrors(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
 	}
-	if result["status_code"] != float64(402) {
-		t.Errorf("status_code = %v, want 402", result["status_code"])
+	if result["statusCode"] != float64(402) {
+		t.Errorf("statusCode = %v, want 402", result["statusCode"])
 	}
 	errorsMap, ok := result["errors"].(map[string]interface{})
 	if !ok {
@@ -405,8 +405,8 @@ func TestHandleAPIErrorTo_ResponseError_StructuredJSON(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("output should be valid JSON, got: %q, error: %v", buf.String(), err)
 	}
-	if result["status_code"] != float64(502) {
-		t.Errorf("status_code = %v, want 502", result["status_code"])
+	if result["statusCode"] != float64(502) {
+		t.Errorf("statusCode = %v, want 502", result["statusCode"])
 	}
 	if result["content_type"] != "text/html" {
 		t.Errorf("content_type = %v, want text/html", result["content_type"])
@@ -462,16 +462,16 @@ func TestHandleAPIErrorTo_Integration_ServerResponsePassthrough(t *testing.T) {
 			name:       "403_forbidden",
 			setupError: &api.APIError{StatusCode: 403, Message: "无权访问", ServerCode: 403},
 			wantFields: map[string]interface{}{
-				"message":     "无权访问",
-				"status_code": float64(403),
+				"msg":        "无权访问",
+				"statusCode": float64(403),
 			},
 		},
 		{
 			name:       "500_server_error",
 			setupError: &api.APIError{StatusCode: 500, Message: "内部错误", ServerCode: 500},
 			wantFields: map[string]interface{}{
-				"message":     "内部错误",
-				"status_code": float64(500),
+				"msg":        "内部错误",
+				"statusCode": float64(500),
 			},
 		},
 		{
@@ -481,8 +481,8 @@ func TestHandleAPIErrorTo_Integration_ServerResponsePassthrough(t *testing.T) {
 				Errors:  map[string]interface{}{"name": "required"},
 			},
 			wantFields: map[string]interface{}{
-				"message":     "参数校验失败",
-				"status_code": float64(422),
+				"msg":        "参数校验失败",
+				"statusCode": float64(422),
 			},
 		},
 		{
@@ -495,8 +495,8 @@ func TestHandleAPIErrorTo_Integration_ServerResponsePassthrough(t *testing.T) {
 			},
 			verbose: true,
 			wantFields: map[string]interface{}{
-				"message":      "服务端返回异常 (HTTP 502)",
-				"status_code":  float64(502),
+				"msg":          "服务端返回异常 (HTTP 502)",
+				"statusCode":   float64(502),
 				"content_type": "text/html",
 				"body":         "Bad Gateway",
 			},

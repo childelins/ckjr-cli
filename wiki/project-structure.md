@@ -11,7 +11,7 @@ ckjr-cli/
   cmd/                 # CLI 命令定义和入口
   internal/            # 内部库，不对外暴露
   docs/                # 开发文档
-  skills/              # Claude Code Skill
+  skills/              # Skills（共享源，安装时自动分发到各平台）
   .github/             # CI/CD 配置
 ```
 

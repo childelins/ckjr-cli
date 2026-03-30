@@ -129,13 +129,13 @@ req.Header.Set("Authorization", "Bearer "+c.apiKey)
 req.Header.Set("Content-Type", "application/json")
 ```
 
-响应格式（Dingo API Response）：
+响应格式（API Response）：
 
 ```json
 {
   "data": { ... },
-  "message": "success",
-  "status_code": 200,
+  "msg": "success",
+  "statusCode": 200,
   "errors": {}
 }
 ```
@@ -146,10 +146,10 @@ req.Header.Set("Content-Type", "application/json")
 
 | 错误类型 | 输出字段 | 示例 |
 |---------|---------|------|
-| 认证错误 (401) | `message`, `status_code` | `{"message":"api_key 已过期，请重新登录获取","status_code":401}` |
-| 参数校验错误 (422) | `message`, `status_code`, `errors` | `{"message":"参数校验失败","status_code":422,"errors":{"name":["required"]}}` |
-| API 业务错误 (402/403/500) | `message`, `status_code`, `errors`(可选) | `{"message":"余额不足","status_code":402,"errors":{"detail":"账户余额为0"}}` |
-| 非 JSON 响应 (502等) | `message`, `status_code`, `content_type`, `body`(verbose) | `{"message":"服务端返回异常 (HTTP 502)","status_code":502,"content_type":"text/html"}` |
+| 认证错误 (401) | `msg`, `statusCode` | `{"msg":"api_key 已过期，请重新登录获取","statusCode":401}` |
+| 参数校验错误 (422) | `msg`, `statusCode`, `errors` | `{"msg":"参数校验失败","statusCode":422,"errors":{"name":["required"]}}` |
+| API 业务错误 (402/403/500) | `msg`, `statusCode`, `errors`(可选) | `{"msg":"余额不足","statusCode":402,"errors":{"detail":"账户余额为0"}}` |
+| 非 JSON 响应 (502等) | `msg`, `statusCode`, `content_type`, `body`(verbose) | `{"msg":"服务端返回异常 (HTTP 502)","statusCode":502,"content_type":"text/html"}` |
 | 客户端错误 (网络等) | `error` | `{"error":"网络连接超时"}` |
 
 错误类型定义（`internal/api/client.go`）：

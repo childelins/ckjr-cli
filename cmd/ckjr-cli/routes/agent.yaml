@@ -6,25 +6,34 @@ routes:
         path: /admin/aiCreationCenter/createApp
         description: 创建智能体
         template:
+            name:
+                description: 智能体名称
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 20
             avatar:
                 description: 头像URL
                 required: true
+                type: string
+                minLength: 1
+                maxLength: 255
             botType:
-                description: 智能体类型, 99-自营智能体 100-Coze智能体
+                description: 智能体类型, 99-自营智能体
                 required: false
                 default: 99
                 type: int
             desc:
                 description: 描述
                 required: true
+                type: string
+                minLength: 1
+                maxLength: 200
             isSaleOnly:
                 description: 是否支持售卖, 1-交付型 0-客服型
                 required: false
                 default: 1
                 type: int
-            name:
-                description: 智能体名称
-                required: true
             promptType:
                 description: 提示词模板类型, 1-交付型 3-角色类/客服型
                 required: false
@@ -38,6 +47,7 @@ routes:
             aikbId:
                 description: 智能体ID
                 required: true
+                type: int
     get:
         method: POST
         path: /admin/aiCreationCenter/describeApp
@@ -46,6 +56,7 @@ routes:
             aikbId:
                 description: 智能体ID
                 required: true
+                type: int
     list:
         method: POST
         path: /admin/aiCreationCenter/listApp
@@ -61,6 +72,7 @@ routes:
                 required: false
                 default: 10
                 type: int
+                max: 50
             name:
                 description: 按名称搜索
                 required: false
@@ -69,6 +81,7 @@ routes:
                 required: false
                 default: 1
                 type: int
+                max: 100
             platType:
                 description: 智能体类型, 0-全部 1-自营智能体 2-Coze智能体
                 required: false
@@ -82,18 +95,33 @@ routes:
             aikbId:
                 description: 智能体ID
                 required: true
+                type: int
             avatar:
                 description: 智能体头像URL
                 required: true
+                type: string
+                minLength: 1
+                maxLength: 255
             desc:
                 description: 智能体描述
                 required: true
+                type: string
+                minLength: 1
+                maxLength: 200
             greeting:
                 description: 开场白文案
                 required: false
+                type: string
+                maxLength: 200
             instructions:
                 description: 智能体提示词
                 required: true
+                type: string
+                minLength: 1
+                maxLength: 10000
             name:
                 description: 智能体名称
                 required: true
+                type: string
+                minLength: 1
+                maxLength: 20

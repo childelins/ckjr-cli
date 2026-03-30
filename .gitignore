@@ -1,5 +1,6 @@
 # Binaries
 ckjr
+ckjr-cli
 *.exe
 *.exe~
 *.dll

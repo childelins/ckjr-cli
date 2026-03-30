@@ -677,3 +677,21 @@
 - 添加 TestHandleAPIErrorTo_Integration_ServerResponsePassthrough 表驱动测试
 - 4 个子测试: 403_forbidden, 500_server_error, 422_validation_with_field_errors, 502_gateway_non_json_verbose
 - 全量测试通过（17 个包），go vet 无警告
+
+## 2026-03-29 生产环境静默 HTTP 请求日志
+
+### Phase 1: 修改 TestInit_ProdLogLevel 测试
+- Status: complete (449b8dc)
+- 生产环境文件只记录 ERROR，不记录 DEBUG 和 INFO
+- 增加 slog.Error("error message") 并断言出现
+
+### Phase 2: 修改 logging.go 实现
+- Status: complete (449b8dc)
+- Production 常量注释: INFO -> ERROR
+- Init 注释: production=INFO -> production=ERROR
+- level 默认值: slog.LevelInfo -> slog.LevelError
+- verbose stderr handler 使用独立的 slog.LevelInfo（不受 env 影响）
+
+### Phase 3: 验证与提交
+- Status: complete (449b8dc)
+- 全量测试通过（17 个包），无回归

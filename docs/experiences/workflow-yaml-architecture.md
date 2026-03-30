@@ -15,14 +15,6 @@ tags: [refactor, breaking-change, yaml-consistency]
 | CLI 参数名 | --name | 与 YAML 字段保持一致 |
 | Go 结构体字段 | Name | 简洁直接，无命名冲突 |
 
-## 实施顺序
-
-**TDD 驱动的四阶段策略：**
-1. **代码修改** - 先改结构体定义，让测试失败
-2. **依赖更新** - 逐个更新使用该字段的代码
-3. **YAML 文件** - 最后更新配置文件
-4. **测试更新** - 更新测试断言，确保通过
-
 ## 影响范围
 
 | 类型 | 数量 | 文件 |
@@ -58,10 +50,3 @@ cfg.Name  // 原: cfg.Resource
 name: common  # 原: resource: common
 ```
 
-## 验收标准
-
-- 所有测试通过
-- `go run . agent describe` 正常工作
-- `route import --name-desc` 正常工作
-- 生成的 YAML 文件使用 `name` 字段
-- 代码中无 `cfg.Resource` 引用
