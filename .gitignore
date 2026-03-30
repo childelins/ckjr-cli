@@ -1,6 +1,6 @@
 # Binaries
-ckjr
-ckjr-cli
+/ckjr
+/ckjr-cli
 *.exe
 *.exe~
 *.dll

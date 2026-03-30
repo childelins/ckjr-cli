@@ -28,7 +28,7 @@ type Field struct {
 type Route struct {
 	Method      string           `yaml:"method"`
 	Path        string           `yaml:"path"`
-	Description string           `yaml:"description,omitempty"`
+	Description string           `yaml:"description"`
 	Template    map[string]Field `yaml:"template"`
 }
 

@@ -1,0 +1,78 @@
+name: asset
+description: 素材库管理，用于获取图片/音频/视频等素材
+routes:
+    audios:
+        method: GET
+        path: /admin/assets/audios
+        description: 获取音频素材列表
+        template:
+            isAll:
+                description: 是否查看全部素材, 1-是 0-否
+                required: true
+                default: 1
+                type: int
+            name:
+                description: 按素材名称搜索
+                required: false
+            page:
+                description: 页码
+                required: true
+                default: 1
+                type: int
+                max: 100
+            limit:
+                description: 每页数量
+                required: true
+                default: 20
+                type: int
+                max: 50
+    videos:
+        method: GET
+        path: /admin/resLibrary/findResourceList
+        description: 获取视频素材列表
+        template:
+            isAll:
+                description: 是否查看全部素材, 1-是 0-否
+                required: true
+                default: 1
+                type: int
+            name:
+                description: 按素材名称搜索
+                required: false
+            page:
+                description: 页码
+                required: true
+                default: 1
+                type: int
+                max: 100
+            limit:
+                description: 每页数量
+                required: true
+                default: 20
+                type: int
+                max: 50
+    images:
+        method: GET
+        path: /admin/assets/images
+        description: 获取图片素材列表
+        template:
+            isAll:
+                description: 是否查看全部素材, 1-是 0-否
+                required: true
+                default: 1
+                type: int
+            name:
+                description: 按素材名称搜索
+                required: false
+            page:
+                description: 页码
+                required: true
+                default: 1
+                type: int
+                max: 100
+            limit:
+                description: 每页数量
+                required: true
+                default: 20
+                type: int
+                max: 50
