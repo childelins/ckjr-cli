@@ -83,7 +83,7 @@ func validateRouteFields(t *testing.T, filename string, cfg *router.RouteConfig)
 	}
 	validTypes := map[string]bool{
 		"": true, "string": true, "int": true, "float": true,
-		"bool": true, "array": true,
+		"bool": true, "array": true, "path": true,
 	}
 
 	for actionName, route := range cfg.Routes {

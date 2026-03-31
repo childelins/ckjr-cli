@@ -1,0 +1,136 @@
+name: course
+description: 课程管理，包括视频/音频/图文
+routes:
+    create:
+        method: POST
+        path: /admin/courses
+        description: 创建课程
+        template:
+            courseType:
+                description: 课程类型, 0-视频课程, 1-音频课程, 2-图文课程
+                required: true
+                type: int
+            name:
+                description: 课程名称
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 50
+            courseAvatar:
+                description: 课程封面
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 255
+            detailInfo:
+                description: |
+                    课程详情, 支持图文混合排版。推荐使用富文本(type=1)实现完整排版效果。
+                    - 限制：能用一个富文本/纯文本块就不要使用多个
+                    - type=1(富文本，推荐)：支持 HTML 标签，可包含标题、段落、列表、图片等，实现图文混合排版
+                    - type=4(纯文本)：普通文本内容
+                    - type=5(图片)：独立图片展示
+                required: true
+                type: array
+                example: |
+                    [{"type": 1, "content": "<h2>课程简介</h2><p>这是课程介绍内容</p><img src=\"https://example.com/image.jpg\"/><ul><li>要点一</li><li>要点二</li></ul>", "title": ""}]
+            isSaleOnly:
+                description: 是否单独售卖, 1-是 0-否
+                required: true
+                type: int
+                default: 1
+            payType:
+                description: 售卖类型, 1-免费, 2-付费
+                required: true
+                type: int
+            price:
+                description: 课程价格
+                required: true
+                type: float
+            status:
+                description: 上下架状态, 1-上架, 2-下架
+                required: true
+                type: int
+                default: 1
+    list:
+        method: GET
+        path: /admin/courses
+        description: 获取课程列表(视频/音频/图文)
+        template:
+            courseType:
+                description: 课程类型, 0-视频 1-音频 2-图文
+                required: false
+                type: int
+            limit:
+                description: 每页数量
+                required: true
+                default: 20
+                type: int
+                max: 50
+            name:
+                description: 按课程名称搜索
+                required: false
+            page:
+                description: 页码
+                required: true
+                default: 1
+                type: int
+                max: 100
+            status:
+                description: 上架状态, 1-已上架 2-已下架
+                required: false
+                default: 1
+                type: int
+    update:
+        method: PUT
+        path: /admin/courses/{courseId}
+        description: 更新课程
+        template:
+            courseId:
+                description: 课程ID
+                required: true
+                type: path
+            courseType:
+                description: 课程类型, 0-视频课程, 1-音频课程, 2-图文课程
+                required: true
+                type: int
+            name:
+                description: 课程名称
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 50
+            courseAvatar:
+                description: 课程封面
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 255
+            detailInfo:
+                description: |
+                    课程详情, 支持图文混合排版。推荐使用富文本(type=1)实现完整排版效果。
+                    - 限制：能用一个富文本/纯文本块就不要使用多个
+                    - type=1(富文本，推荐)：支持 HTML 标签，可包含标题、段落、列表、图片等，实现图文混合排版
+                    - type=4(纯文本)：普通文本内容
+                    - type=5(图片)：独立图片展示
+                required: true
+                type: array
+                example: |
+                    [{"type": 1, "content": "<h2>课程简介</h2><p>这是课程介绍内容</p><img src=\"https://example.com/image.jpg\"/><ul><li>要点一</li><li>要点二</li></ul>", "title": ""}]
+            isSaleOnly:
+                description: 是否单独售卖, 1-是 0-否
+                required: true
+                type: int
+                default: 1
+            payType:
+                description: 售卖类型, 1-免费, 2-付费
+                required: true
+                type: int
+            price:
+                description: 课程价格
+                required: true
+                type: float
+            status:
+                description: 上下架状态, 1-上架, 2-下架
+                required: true
+                type: int
+                default: 1
