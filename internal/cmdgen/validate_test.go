@@ -272,6 +272,46 @@ func TestValidateAll_Pass(t *testing.T) {
 	}
 }
 
+func TestValidateTypes_SkipsPathParam(t *testing.T) {
+	input := map[string]interface{}{
+		"courseId": float64(123),
+	}
+	template := map[string]router.Field{
+		"courseId": {Type: "path", Required: true},
+	}
+	errs := validateTypes(input, template)
+	if len(errs) != 0 {
+		t.Errorf("expected no errors for type=path, got %v", errs)
+	}
+}
+
+func TestValidateRequiredErrors_SkipsPathParam(t *testing.T) {
+	// courseId 已被 ReplacePath 从 input 中移除的场景
+	input := map[string]interface{}{"name": "test"}
+	template := map[string]router.Field{
+		"courseId": {Type: "path", Required: true},
+		"name":     {Type: "string", Required: true},
+	}
+	errs := validateRequiredErrors(input, template)
+	// courseId 虽然 required 且不在 input 中，但 type=path 应被跳过
+	if len(errs) != 0 {
+		t.Errorf("expected no errors, got %v", errs)
+	}
+}
+
+func TestValidateConstraints_SkipsPathParam(t *testing.T) {
+	input := map[string]interface{}{
+		"courseId": float64(123),
+	}
+	template := map[string]router.Field{
+		"courseId": {Type: "path", Required: true, Min: floatPtr(1)},
+	}
+	errs := validateConstraints(input, template)
+	if len(errs) != 0 {
+		t.Errorf("expected no errors for path param, got %v", errs)
+	}
+}
+
 func TestApplyDefaults_IntNormalization(t *testing.T) {
 	template := map[string]router.Field{
 		"page": {

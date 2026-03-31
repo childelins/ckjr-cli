@@ -35,10 +35,16 @@ func ValidateAll(input map[string]interface{}, template map[string]router.Field)
 }
 
 func validateRequiredErrors(input map[string]interface{}, template map[string]router.Field) []*FieldValidationError {
-	missing := validateRequired(input, template)
 	var errs []*FieldValidationError
-	for _, name := range missing {
-		errs = append(errs, &FieldValidationError{Field: name, Message: "为必填字段"})
+	for name, field := range template {
+		if IsPathParam(field) {
+			continue
+		}
+		if field.Required {
+			if _, exists := input[name]; !exists {
+				errs = append(errs, &FieldValidationError{Field: name, Message: "为必填字段"})
+			}
+		}
 	}
 	return errs
 }
@@ -46,7 +52,7 @@ func validateRequiredErrors(input map[string]interface{}, template map[string]ro
 func validateTypes(input map[string]interface{}, template map[string]router.Field) []*FieldValidationError {
 	var errs []*FieldValidationError
 	for name, field := range template {
-		if field.Type == "" {
+		if field.Type == "" || IsPathParam(field) {
 			continue
 		}
 		val, exists := input[name]
@@ -109,6 +115,9 @@ func validateConstraints(input map[string]interface{}, template map[string]route
 
 	var errs []*FieldValidationError
 	for name, field := range template {
+		if IsPathParam(field) {
+			continue
+		}
 		val, exists := input[name]
 		if !exists || val == nil {
 			continue
