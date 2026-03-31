@@ -163,6 +163,30 @@ echo 'curl -X POST https://api.example.com/admin/example/list -d '"'"'{"page":1}
 | `--name` / `-n` | 路由名，默认从 URL 路径推导 |
 | `--name-desc` | 资源描述，新建文件时必需 |
 
+## 方式三：创建工作流骨架
+
+快速创建模块的 workflow YAML 骨架文件：
+
+```bash
+ckjr-cli workflow init example
+# 已创建: cmd/ckjr-cli/workflows/example.yaml
+```
+
+生成结果：
+
+```yaml
+name: example
+description: example
+workflows:
+  workflow-name:
+    description: 工作流描述
+    triggers: []
+    inputs: []
+    steps: []
+```
+
+然后编辑该文件，填充具体的 triggers、inputs、steps 等内容。
+
 ## 编译验证
 
 本地测试新增的模块：

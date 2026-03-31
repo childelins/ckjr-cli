@@ -216,6 +216,9 @@ ckjr-cli workflow list
 
 # 查看工作流详情
 ckjr-cli workflow describe create-agent
+
+# 创建工作流骨架文件（隐藏命令）
+ckjr-cli workflow init example
 ```
 
 ---

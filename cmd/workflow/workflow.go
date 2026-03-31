@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	configyaml "github.com/childelins/ckjr-cli/internal/config/yaml"
 	"github.com/childelins/ckjr-cli/internal/workflow"
+	"github.com/childelins/ckjr-cli/internal/yamlgen"
 )
 
 // NewCommand 创建 workflow 命令及其子命令
@@ -83,7 +85,23 @@ func NewCommand(yamlFS *configyaml.FS) *cobra.Command {
 		},
 	}
 
-	workflowCmd.AddCommand(workflowListCmd, workflowDescribeCmd)
+	workflowInitCmd := &cobra.Command{
+		Use:    "init <module>",
+		Short:  "创建模块 workflow 骨架文件",
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			moduleName := args[0]
+			path := filepath.Join("cmd", "ckjr-cli", "workflows", moduleName+".yaml")
+			if err := yamlgen.InitWorkflowFile(path, moduleName); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "已创建: %s\n", path)
+			return nil
+		},
+	}
+
+	workflowCmd.AddCommand(workflowListCmd, workflowDescribeCmd, workflowInitCmd)
 	return workflowCmd
 }
 

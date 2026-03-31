@@ -29,7 +29,7 @@ cmd/
     route.go           # route import 命令（隐藏命令）
     route_test.go
   workflow/
-    workflow.go        # workflow list/describe 子命令
+    workflow.go        # workflow list/describe 子命令，init 隐藏命令
     workflow_test.go
   ckjr-cli/
     main.go            # 独立的 main 包，供 go install 使用

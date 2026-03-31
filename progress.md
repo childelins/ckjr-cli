@@ -695,3 +695,23 @@
 ### Phase 3: 验证与提交
 - Status: complete (449b8dc)
 - 全量测试通过（17 个包），无回归
+
+## 2026-03-30 Workflow YAML 快速创建
+
+### Task 1: 实现 InitWorkflowFile 函数
+- Status: complete (a70bb2e)
+- 创建 internal/yamlgen/workflow.go
+- 实现 InitWorkflowFile(path, moduleName) 函数，生成 workflow YAML 骨架
+- 文件已存在时返回错误
+- 编译验证通过
+
+### Task 2: 编写测试
+- Status: complete (a70bb2e)
+- 创建 internal/yamlgen/workflow_test.go
+- TestInitWorkflowFile: 验证生成的 YAML 可被 workflow.Parse 正确解析，name/description/workflows 字段正确
+- TestInitWorkflowFile_Exists: 验证文件已存在时返回错误
+- 全部 7 个 yamlgen 测试通过，无回归
+
+### Task 3: 提交代码
+- Status: complete (a70bb2e)
+- 提交: feat(yamlgen): add InitWorkflowFile for quick workflow YAML skeleton creation

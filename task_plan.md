@@ -1554,3 +1554,45 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |------|---------|---------|
+
+---
+---
+
+# Workflow YAML 快速创建 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-03-30-workflow-yaml-quick-create.md
+
+## 概述
+
+提供 `InitWorkflowFile(path, moduleName)` 函数，快速生成 workflow YAML 骨架文件。
+
+---
+
+## Task 1: 实现 InitWorkflowFile 函数
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (a70bb2e)
+- **Description**: 创建 internal/yamlgen/workflow.go，实现 InitWorkflowFile 函数
+
+---
+
+## Task 2: 编写测试
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (a70bb2e)
+- **Description**: 创建 internal/yamlgen/workflow_test.go，TestInitWorkflowFile + TestInitWorkflowFile_Exists 全部通过
+
+---
+
+## Task 3: 提交代码
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (a70bb2e)
+- **Description**: 提交两个新文件
+
+---
+
+## 遇到的错误 (Workflow YAML 快速创建)
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
