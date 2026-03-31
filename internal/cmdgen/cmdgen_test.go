@@ -177,6 +177,48 @@ func TestBuildSubCommand_GeneratesRequestID(t *testing.T) {
 	}
 }
 
+func TestBuildSubCommand_PathParam(t *testing.T) {
+	var capturedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		resp := api.Response{Data: map[string]string{"ok": "true"}, Message: "ok", StatusCode: 200}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	cfg := &router.RouteConfig{
+		Name: "course",
+		Routes: map[string]router.Route{
+			"update": {
+				Method:      "PUT",
+				Path:        "/admin/courses/{courseId}",
+				Description: "更新课程",
+				Template: map[string]router.Field{
+					"courseId": {Type: "path", Required: true},
+					"name":    {Type: "string", Required: true},
+				},
+			},
+		},
+	}
+
+	clientFactory := func() (*api.Client, error) {
+		return api.NewClient(server.URL, "test-key"), nil
+	}
+
+	cmd := BuildCommand(cfg, clientFactory)
+	cmd.PersistentFlags().Bool("pretty", false, "")
+	cmd.PersistentFlags().Bool("verbose", false, "")
+
+	cmd.SetArgs([]string{"update", `{"courseId": 123, "name": "Go入门"}`})
+	cmd.Execute()
+
+	// 验证路径中 {courseId} 被替换为 123
+	if capturedPath != "/admin/courses/123" {
+		t.Errorf("expected path /admin/courses/123, got %s", capturedPath)
+	}
+}
+
 func TestPrintTemplate_TypeAndExample(t *testing.T) {
 	template := map[string]router.Field{
 		"count": {

@@ -78,6 +78,13 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 			// 应用默认值
 			applyDefaults(input, route.Template)
 
+			// 路径参数替换
+			resolvedPath, err := ReplacePath(route.Path, input, route.Template)
+			if err != nil {
+				output.PrintError(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+
 			// 校验参数
 			if errs := ValidateAll(input, route.Template); len(errs) > 0 {
 				var msgs []string
@@ -109,7 +116,7 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 			ctx = logging.WithRequestID(ctx, requestID)
 
 			var result interface{}
-			if err := client.DoCtx(ctx, route.Method, route.Path, input, &result); err != nil {
+			if err := client.DoCtx(ctx, route.Method, resolvedPath, input, &result); err != nil {
 				handleAPIError(err, verbose)
 				os.Exit(1)
 			}
