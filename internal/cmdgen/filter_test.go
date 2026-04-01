@@ -713,6 +713,88 @@ func TestFilterByExclude_NoneMatch(t *testing.T) {
 	}
 }
 
+func TestFilterResponse_ListWithFields(t *testing.T) {
+	m := map[string]interface{}{
+		"list": map[string]interface{}{
+			"current_page": float64(1),
+			"data": []interface{}{
+				map[string]interface{}{
+					"courseId":     float64(15427611),
+					"name":        "AI 红利期",
+					"courseAvatar": "https://example.com/avatar.png",
+					"price":       "0.00",
+					"permission":  float64(19),
+					"secret":      "hidden",
+				},
+			},
+			"total":    float64(1),
+			"per_page": "10",
+		},
+	}
+	filter := &router.ResponseFilter{
+		Fields: []string{
+			"list.data.courseId",
+			"list.data.name",
+			"list.data.courseAvatar",
+			"list.data.price",
+			"list.total",
+			"list.current_page",
+			"list.per_page",
+		},
+	}
+
+	result := FilterResponse(m, filter)
+
+	rm := result.(map[string]interface{})
+	list := rm["list"].(map[string]interface{})
+	if list["total"] != float64(1) {
+		t.Errorf("total: got %v, want 1", list["total"])
+	}
+	if list["current_page"] != float64(1) {
+		t.Errorf("current_page: got %v, want 1", list["current_page"])
+	}
+	data := list["data"].([]interface{})
+	item := data[0].(map[string]interface{})
+	if item["courseId"] != float64(15427611) {
+		t.Errorf("courseId: got %v, want 15427611", item["courseId"])
+	}
+	if _, exists := item["secret"]; exists {
+		t.Error("secret should be filtered out")
+	}
+	if _, exists := item["permission"]; exists {
+		t.Error("permission should be filtered out")
+	}
+}
+
+func TestFilterResponse_ListWithExclude(t *testing.T) {
+	m := map[string]interface{}{
+		"list": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"id": float64(1), "name": "Go", "secret": "x"},
+				map[string]interface{}{"id": float64(2), "name": "Rust", "secret": "y"},
+			},
+			"total": float64(2),
+		},
+	}
+	filter := &router.ResponseFilter{
+		Exclude: []string{"list.data.secret"},
+	}
+
+	result := FilterResponse(m, filter)
+
+	rm := result.(map[string]interface{})
+	data := rm["list"].(map[string]interface{})["data"].([]interface{})
+	for i, elem := range data {
+		em := elem.(map[string]interface{})
+		if _, exists := em["secret"]; exists {
+			t.Errorf("element %d: secret should be excluded", i)
+		}
+		if _, exists := em["name"]; !exists {
+			t.Errorf("element %d: name should be preserved", i)
+		}
+	}
+}
+
 func TestFilterResponse_NilFilter(t *testing.T) {
 	m := map[string]interface{}{"a": float64(1)}
 	result := FilterResponse(m, nil)
