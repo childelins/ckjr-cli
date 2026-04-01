@@ -385,6 +385,46 @@ func TestPrintTemplate_PathFieldNote(t *testing.T) {
 	}
 }
 
+func TestPrintTemplate_DateFieldNote(t *testing.T) {
+	template := map[string]router.Field{
+		"delayTime": {
+			Description: "定时上架时间",
+			Required:    false,
+			Type:        "date",
+		},
+		"name": {
+			Description: "名称",
+			Required:    true,
+			Type:        "string",
+		},
+	}
+
+	var buf bytes.Buffer
+	printTemplateTo(&buf, template, nil)
+
+	var outer map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &outer); err != nil {
+		t.Fatalf("JSON parse error: %v", err)
+	}
+	result := outer["request"].(map[string]interface{})
+
+	// date 类型应有 note
+	dateEntry := result["delayTime"].(map[string]interface{})
+	note, ok := dateEntry["note"]
+	if !ok {
+		t.Fatal("delayTime (type=date) should have note field")
+	}
+	if note != "日期格式: YYYY-MM-DD HH:MM:SS" {
+		t.Errorf("note = %q, want %q", note, "日期格式: YYYY-MM-DD HH:MM:SS")
+	}
+
+	// 非 date 类型不应因此多出 note
+	nameEntry := result["name"].(map[string]interface{})
+	if _, exists := nameEntry["note"]; exists {
+		t.Error("name (type=string) should not have note field")
+	}
+}
+
 func TestPrintTemplate_WithResponse(t *testing.T) {
 	template := map[string]router.Field{
 		"courseType": {

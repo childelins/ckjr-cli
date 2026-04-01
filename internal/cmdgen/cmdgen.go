@@ -158,6 +158,9 @@ func printTemplateTo(w io.Writer, template map[string]router.Field, response *ro
 		if t == "path" {
 			entry["note"] = "路径参数，必须包含在 JSON 中，将自动替换 URL 中的占位符"
 		}
+		if t == "date" {
+			entry["note"] = "日期格式: YYYY-MM-DD HH:MM:SS"
+		}
 		if field.Example != "" {
 			entry["example"] = field.Example
 		}
