@@ -236,14 +236,15 @@ func TestPrintTemplate_TypeAndExample(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	printTemplateTo(&buf, template)
-	var result map[string]map[string]interface{}
-	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+	printTemplateTo(&buf, template, nil)
+	var outer map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &outer); err != nil {
 		t.Fatalf("JSON parse error: %v", err)
 	}
+	result := outer["request"].(map[string]interface{})
 
 	// count: 有 type=int 和 example
-	countEntry := result["count"]
+	countEntry := result["count"].(map[string]interface{})
 	if countEntry["type"] != "int" {
 		t.Errorf("count.type = %v, want \"int\"", countEntry["type"])
 	}
@@ -252,7 +253,7 @@ func TestPrintTemplate_TypeAndExample(t *testing.T) {
 	}
 
 	// name: 无 type 应默认 string，无 example 应不存在
-	nameEntry := result["name"]
+	nameEntry := result["name"].(map[string]interface{})
 	if nameEntry["type"] != "string" {
 		t.Errorf("name.type = %v, want \"string\"", nameEntry["type"])
 	}
@@ -307,15 +308,16 @@ func TestPrintTemplate_Constraints(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	printTemplateTo(&buf, template)
+	printTemplateTo(&buf, template, nil)
 
-	var result map[string]map[string]interface{}
-	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+	var outer map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &outer); err != nil {
 		t.Fatalf("JSON parse error: %v", err)
 	}
+	result := outer["request"].(map[string]interface{})
 
 	// page: 有 constraints
-	pageEntry := result["page"]
+	pageEntry := result["page"].(map[string]interface{})
 	constraints, ok := pageEntry["constraints"]
 	if !ok {
 		t.Fatal("page should have constraints")
@@ -329,7 +331,7 @@ func TestPrintTemplate_Constraints(t *testing.T) {
 	}
 
 	// keyword: 有 constraints
-	keywordEntry := result["keyword"]
+	keywordEntry := result["keyword"].(map[string]interface{})
 	kc := keywordEntry["constraints"].(map[string]interface{})
 	if kc["minLength"] != 2.0 { // JSON 数字解析为 float64
 		t.Errorf("constraints.minLength = %v, want 2", kc["minLength"])
@@ -357,15 +359,16 @@ func TestPrintTemplate_PathFieldNote(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	printTemplateTo(&buf, template)
+	printTemplateTo(&buf, template, nil)
 
-	var result map[string]map[string]interface{}
-	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+	var outer map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &outer); err != nil {
 		t.Fatalf("JSON parse error: %v", err)
 	}
+	result := outer["request"].(map[string]interface{})
 
 	// path 类型字段应有 note
-	courseEntry := result["courseId"]
+	courseEntry := result["courseId"].(map[string]interface{})
 	note, ok := courseEntry["note"]
 	if !ok {
 		t.Fatal("courseId (type=path) should have note field")
@@ -376,9 +379,83 @@ func TestPrintTemplate_PathFieldNote(t *testing.T) {
 	}
 
 	// 非 path 类型字段不应有 note
-	nameEntry := result["name"]
+	nameEntry := result["name"].(map[string]interface{})
 	if _, exists := nameEntry["note"]; exists {
 		t.Error("name (type=string) should not have note field")
+	}
+}
+
+func TestPrintTemplate_WithResponse(t *testing.T) {
+	template := map[string]router.Field{
+		"courseType": {
+			Description: "课程类型",
+			Required:    false,
+			Type:        "int",
+		},
+	}
+	response := &router.ResponseFilter{
+		Fields: []router.ResponseField{
+			{Path: "list.data.courseId"},
+			{Path: "list.data.courseType", Description: "课程类型, 0-视频 1-音频 2-图文"},
+			{Path: "list.data.status", Description: "上架状态, 1-已上架 2-已下架"},
+			{Path: "list.data.name"},
+		},
+	}
+
+	var buf bytes.Buffer
+	printTemplateTo(&buf, template, response)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v, output: %s", err, buf.String())
+	}
+
+	// 应有 request 和 response 两个顶层 key
+	reqSection, ok := result["request"].(map[string]interface{})
+	if !ok {
+		t.Fatal("missing or invalid 'request' section")
+	}
+	if _, exists := reqSection["courseType"]; !exists {
+		t.Error("request should contain courseType")
+	}
+
+	respSection, ok := result["response"].(map[string]interface{})
+	if !ok {
+		t.Fatal("missing or invalid 'response' section")
+	}
+
+	// 有描述的字段
+	if respSection["list.data.courseType"] != "课程类型, 0-视频 1-音频 2-图文" {
+		t.Errorf("response[list.data.courseType] = %v", respSection["list.data.courseType"])
+	}
+	// 无描述的字段值为空字符串
+	if respSection["list.data.courseId"] != "" {
+		t.Errorf("response[list.data.courseId] = %v, want empty string", respSection["list.data.courseId"])
+	}
+}
+
+func TestPrintTemplate_WithoutResponse(t *testing.T) {
+	template := map[string]router.Field{
+		"name": {
+			Description: "名称",
+			Required:    true,
+		},
+	}
+
+	var buf bytes.Buffer
+	printTemplateTo(&buf, template, nil)
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v, output: %s", err, buf.String())
+	}
+
+	// 应有 request 但无 response
+	if _, ok := result["request"]; !ok {
+		t.Error("should have 'request' section")
+	}
+	if _, ok := result["response"]; ok {
+		t.Error("should not have 'response' section when no response filter")
 	}
 }
 

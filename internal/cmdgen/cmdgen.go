@@ -46,7 +46,7 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 		Run: func(cmd *cobra.Command, args []string) {
 			// --template 模式：输出模板并退出
 			if showTemplate {
-				printTemplate(route.Template)
+				printTemplate(route.Template, route.Response)
 				return
 			}
 
@@ -133,12 +133,15 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 	return cmd
 }
 
-func printTemplate(template map[string]router.Field) {
-	printTemplateTo(os.Stdout, template)
+func printTemplate(template map[string]router.Field, response *router.ResponseFilter) {
+	printTemplateTo(os.Stdout, template, response)
 }
 
-func printTemplateTo(w io.Writer, template map[string]router.Field) {
-	tmpl := make(map[string]interface{})
+func printTemplateTo(w io.Writer, template map[string]router.Field, response *router.ResponseFilter) {
+	result := make(map[string]interface{})
+
+	// request 部分
+	request := make(map[string]interface{})
 	for name, field := range template {
 		entry := map[string]interface{}{
 			"description": field.Description,
@@ -180,9 +183,20 @@ func printTemplateTo(w io.Writer, template map[string]router.Field) {
 			entry["constraints"] = constraints
 		}
 
-		tmpl[name] = entry
+		request[name] = entry
 	}
-	output.Print(w, tmpl, true)
+	result["request"] = request
+
+	// response 部分（仅在配置了 fields 时输出）
+	if response != nil && len(response.Fields) > 0 {
+		respFields := make(map[string]interface{})
+		for _, f := range response.Fields {
+			respFields[f.Path] = f.Description
+		}
+		result["response"] = respFields
+	}
+
+	output.Print(w, result, true)
 }
 
 func applyDefaults(input map[string]interface{}, template map[string]router.Field) {
