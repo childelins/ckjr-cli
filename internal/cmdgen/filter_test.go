@@ -7,6 +7,379 @@ import (
 	"github.com/childelins/ckjr-cli/internal/router"
 )
 
+func TestGetNestedValue(t *testing.T) {
+	m := map[string]interface{}{
+		"data": map[string]interface{}{
+			"courseId": float64(15427611),
+			"name":     "Go 入门",
+		},
+	}
+
+	t.Run("existing path", func(t *testing.T) {
+		val, ok := getNestedValue(m, "data.courseId")
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		if val != float64(15427611) {
+			t.Errorf("got %v, want 15427611", val)
+		}
+	})
+
+	t.Run("nonexistent leaf", func(t *testing.T) {
+		_, ok := getNestedValue(m, "data.nonexistent")
+		if ok {
+			t.Fatal("expected ok=false")
+		}
+	})
+
+	t.Run("nonexistent root", func(t *testing.T) {
+		_, ok := getNestedValue(m, "missing.key")
+		if ok {
+			t.Fatal("expected ok=false")
+		}
+	})
+
+	t.Run("intermediate not map", func(t *testing.T) {
+		m := map[string]interface{}{"a": float64(1)}
+		_, ok := getNestedValue(m, "a.b")
+		if ok {
+			t.Fatal("expected ok=false for non-map intermediate")
+		}
+	})
+
+	t.Run("single segment", func(t *testing.T) {
+		val, ok := getNestedValue(m, "data")
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		if _, isMap := val.(map[string]interface{}); !isMap {
+			t.Errorf("expected map, got %T", val)
+		}
+	})
+}
+
+func TestSetNestedValue(t *testing.T) {
+	t.Run("single segment", func(t *testing.T) {
+		m := make(map[string]interface{})
+		setNestedValue(m, "a", float64(1))
+		if m["a"] != float64(1) {
+			t.Errorf("got %v, want 1", m["a"])
+		}
+	})
+
+	t.Run("nested path creates intermediate maps", func(t *testing.T) {
+		m := make(map[string]interface{})
+		setNestedValue(m, "data.courseId", float64(42))
+		data, ok := m["data"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected data to be map, got %T", m["data"])
+		}
+		if data["courseId"] != float64(42) {
+			t.Errorf("got %v, want 42", data["courseId"])
+		}
+	})
+
+	t.Run("overwrite existing intermediate map", func(t *testing.T) {
+		m := map[string]interface{}{
+			"data": map[string]interface{}{"old": "x"},
+		}
+		setNestedValue(m, "data.new", "y")
+		data := m["data"].(map[string]interface{})
+		if data["old"] != "x" {
+			t.Error("should preserve existing keys in intermediate map")
+		}
+		if data["new"] != "y" {
+			t.Error("should set new key")
+		}
+	})
+}
+
+func TestDeleteNestedPath(t *testing.T) {
+	t.Run("delete nested key", func(t *testing.T) {
+		m := map[string]interface{}{
+			"data": map[string]interface{}{
+				"courseId": float64(1),
+				"name":     "Go",
+			},
+		}
+		deleted := deleteNestedPath(m, "data.courseId")
+		if !deleted {
+			t.Fatal("expected deleted=true")
+		}
+		data := m["data"].(map[string]interface{})
+		if _, exists := data["courseId"]; exists {
+			t.Error("courseId should be deleted")
+		}
+		if data["name"] != "Go" {
+			t.Error("name should be preserved")
+		}
+	})
+
+	t.Run("nonexistent path", func(t *testing.T) {
+		m := map[string]interface{}{"a": float64(1)}
+		deleted := deleteNestedPath(m, "a.b")
+		if deleted {
+			t.Fatal("expected deleted=false for nonexistent path")
+		}
+	})
+
+	t.Run("nonexistent root", func(t *testing.T) {
+		m := map[string]interface{}{"a": float64(1)}
+		deleted := deleteNestedPath(m, "missing.key")
+		if deleted {
+			t.Fatal("expected deleted=false")
+		}
+	})
+}
+
+func TestDeepCopyMap(t *testing.T) {
+	original := map[string]interface{}{
+		"a": float64(1),
+		"nested": map[string]interface{}{
+			"b": float64(2),
+		},
+	}
+	copy := deepCopyMap(original)
+
+	// Equal content
+	if !reflect.DeepEqual(copy, original) {
+		t.Errorf("copy should equal original, got %v", copy)
+	}
+
+	// Independent mutation
+	copy["a"] = float64(99)
+	if original["a"] != float64(1) {
+		t.Error("modifying copy should not affect original")
+	}
+	copy["nested"].(map[string]interface{})["b"] = float64(99)
+	if original["nested"].(map[string]interface{})["b"] != float64(2) {
+		t.Error("nested mutation should not affect original")
+	}
+}
+
+func TestDeepCopyMap_ArrayWithMaps(t *testing.T) {
+	original := map[string]interface{}{
+		"list": []interface{}{
+			map[string]interface{}{"id": float64(1), "name": "Go"},
+			map[string]interface{}{"id": float64(2), "name": "Rust"},
+		},
+	}
+	cp := deepCopyMap(original)
+
+	// 修改拷贝中数组内的 map，不应影响原始数据
+	cpList := cp["list"].([]interface{})
+	cpList[0].(map[string]interface{})["name"] = "Python"
+
+	origList := original["list"].([]interface{})
+	if origList[0].(map[string]interface{})["name"] != "Go" {
+		t.Error("modifying copy's array element should not affect original")
+	}
+}
+
+func TestFilterByFields_NestedPath(t *testing.T) {
+	m := map[string]interface{}{
+		"data": map[string]interface{}{
+			"courseId": float64(15427611),
+			"name":     "Go 入门",
+			"secret":   "hidden",
+		},
+	}
+	fields := []string{"data.courseId", "data.name"}
+
+	result := filterByFields(m, fields)
+
+	want := map[string]interface{}{
+		"data": map[string]interface{}{
+			"courseId": float64(15427611),
+			"name":     "Go 入门",
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestFilterByFields_MixedPaths(t *testing.T) {
+	m := map[string]interface{}{
+		"code": float64(0),
+		"data": map[string]interface{}{
+			"courseId": float64(15427611),
+			"name":     "Go 入门",
+		},
+	}
+	fields := []string{"code", "data.courseId"}
+
+	result := filterByFields(m, fields)
+
+	want := map[string]interface{}{
+		"code": float64(0),
+		"data": map[string]interface{}{
+			"courseId": float64(15427611),
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestFilterByFields_NestedPathNotFound(t *testing.T) {
+	m := map[string]interface{}{
+		"data": map[string]interface{}{
+			"courseId": float64(1),
+		},
+	}
+	fields := []string{"data.nonexistent"}
+
+	result := filterByFields(m, fields)
+
+	// 不存在的嵌套路径静默跳过
+	want := map[string]interface{}{}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want empty map", result)
+	}
+}
+
+func TestFilterByFields_NestedPathPreservesStructure(t *testing.T) {
+	m := map[string]interface{}{
+		"data": map[string]interface{}{
+			"courseId": float64(1),
+			"name":     "Go",
+		},
+	}
+	fields := []string{"data.courseId", "data.name"}
+
+	result := filterByFields(m, fields)
+
+	data, ok := result["data"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected data to be map, got %T", result["data"])
+	}
+	if len(data) != 2 {
+		t.Errorf("expected 2 keys in data, got %d", len(data))
+	}
+}
+
+func TestFilterByExclude_NestedPath(t *testing.T) {
+	m := map[string]interface{}{
+		"data": map[string]interface{}{
+			"courseId": float64(1),
+			"name":     "Go",
+			"secret":   "hidden",
+		},
+	}
+	exclude := []string{"data.secret"}
+
+	result := filterByExclude(m, exclude)
+
+	want := map[string]interface{}{
+		"data": map[string]interface{}{
+			"courseId": float64(1),
+			"name":     "Go",
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+	// 原始不应被修改
+	origData := m["data"].(map[string]interface{})
+	if _, exists := origData["secret"]; !exists {
+		t.Error("original map should not be modified")
+	}
+}
+
+func TestFilterByExclude_NestedPathPreservesOriginal(t *testing.T) {
+	m := map[string]interface{}{
+		"data": map[string]interface{}{
+			"a": float64(1),
+		},
+	}
+	filterByExclude(m, []string{"data.a"})
+
+	// 原始 map 不应被修改
+	if _, exists := m["data"].(map[string]interface{})["a"]; !exists {
+		t.Error("exclude should deep copy before deleting")
+	}
+}
+
+// TestFilterByFields_NestedDotKey tests that plain keys with no dot work as before
+func TestFilterByFields_BackwardCompatNoDot(t *testing.T) {
+	m := map[string]interface{}{
+		"a": float64(1),
+		"b": float64(2),
+	}
+	fields := []string{"a"}
+
+	result := filterByFields(m, fields)
+
+	want := map[string]interface{}{"a": float64(1)}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+// TestFilterByExclude_BackwardCompatNoDot tests that plain exclude keys work as before
+func TestFilterByExclude_BackwardCompatNoDot(t *testing.T) {
+	m := map[string]interface{}{"a": float64(1), "b": float64(2)}
+	exclude := []string{"b"}
+
+	result := filterByExclude(m, exclude)
+
+	want := map[string]interface{}{"a": float64(1)}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+// TestFilterResponse_NestedFields tests FilterResponse with nested dot paths
+func TestFilterResponse_NestedFields(t *testing.T) {
+	m := map[string]interface{}{
+		"code": float64(0),
+		"data": map[string]interface{}{
+			"courseId": float64(15427611),
+			"name":     "Go 入门",
+			"ext":      map[string]interface{}{"foo": "bar"},
+		},
+	}
+	filter := &router.ResponseFilter{Fields: []string{"code", "data.courseId", "data.name"}}
+
+	result := FilterResponse(m, filter)
+
+	want := map[string]interface{}{
+		"code": float64(0),
+		"data": map[string]interface{}{
+			"courseId": float64(15427611),
+			"name":     "Go 入门",
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+// TestFilterResponse_NestedExclude tests FilterResponse with nested dot exclude paths
+func TestFilterResponse_NestedExclude(t *testing.T) {
+	m := map[string]interface{}{
+		"code": float64(0),
+		"data": map[string]interface{}{
+			"courseId": float64(1),
+			"ext":      map[string]interface{}{"foo": "bar"},
+		},
+	}
+	filter := &router.ResponseFilter{Exclude: []string{"data.ext"}}
+
+	result := FilterResponse(m, filter)
+
+	want := map[string]interface{}{
+		"code": float64(0),
+		"data": map[string]interface{}{
+			"courseId": float64(1),
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
 func TestFilterByFields_AllMatch(t *testing.T) {
 	m := map[string]interface{}{
 		"courseId": float64(1),

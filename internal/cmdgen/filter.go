@@ -1,40 +1,118 @@
 package cmdgen
 
-import "github.com/childelins/ckjr-cli/internal/router"
+import (
+	"strings"
 
-// filterByFields 仅保留 fields 中列出的顶层 key
+	"github.com/childelins/ckjr-cli/internal/router"
+)
+
+// getNestedValue 沿点号路径在 map 中取值
+// "data.courseId" -> m["data"].(map)["courseId"]
+func getNestedValue(m map[string]interface{}, path string) (interface{}, bool) {
+	parts := strings.Split(path, ".")
+	var current interface{} = m
+	for _, part := range parts {
+		cm, ok := current.(map[string]interface{})
+		if !ok {
+			return nil, false
+		}
+		current, ok = cm[part]
+		if !ok {
+			return nil, false
+		}
+	}
+	return current, true
+}
+
+// setNestedValue 沿点号路径在 map 中设值，自动创建中间 map
+func setNestedValue(m map[string]interface{}, path string, value interface{}) {
+	parts := strings.Split(path, ".")
+	current := m
+	for i := 0; i < len(parts)-1; i++ {
+		next, ok := current[parts[i]]
+		if !ok {
+			next = make(map[string]interface{})
+			current[parts[i]] = next
+		}
+		current = next.(map[string]interface{})
+	}
+	current[parts[len(parts)-1]] = value
+}
+
+// deleteNestedPath 沿点号路径从 map 中删除
+func deleteNestedPath(m map[string]interface{}, path string) bool {
+	parts := strings.Split(path, ".")
+	current := m
+	for i := 0; i < len(parts)-1; i++ {
+		cm, ok := current[parts[i]].(map[string]interface{})
+		if !ok {
+			return false
+		}
+		current = cm
+	}
+	_, exists := current[parts[len(parts)-1]]
+	if !exists {
+		return false
+	}
+	delete(current, parts[len(parts)-1])
+	return true
+}
+
+// deepCopyValue 递归深拷贝 map/array/原始值
+func deepCopyValue(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		return deepCopyMap(val)
+	case []interface{}:
+		cp := make([]interface{}, len(val))
+		for i, elem := range val {
+			cp[i] = deepCopyValue(elem)
+		}
+		return cp
+	default:
+		return v
+	}
+}
+
+// deepCopyMap 递归深拷贝 map
+func deepCopyMap(m map[string]interface{}) map[string]interface{} {
+	cp := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		cp[k] = deepCopyValue(v)
+	}
+	return cp
+}
+
+// filterByFields 仅保留 fields 中列出的 key，支持点号路径访问嵌套字段
 func filterByFields(m map[string]interface{}, fields []string) map[string]interface{} {
-	allowed := make(map[string]bool, len(fields))
-	for _, f := range fields {
-		allowed[f] = true
-	}
-
 	filtered := make(map[string]interface{})
-	for k, v := range m {
-		if allowed[k] {
-			filtered[k] = v
+	for _, f := range fields {
+		if strings.Contains(f, ".") {
+			if val, ok := getNestedValue(m, f); ok {
+				setNestedValue(filtered, f, val)
+			}
+		} else if val, ok := m[f]; ok {
+			filtered[f] = val
 		}
 	}
 	return filtered
 }
 
-// filterByExclude 移除 exclude 中列出的顶层 key
+// filterByExclude 移除 exclude 中列出的 key，支持点号路径删除嵌套字段
+// 返回深拷贝后的 map，不修改原始 m
 func filterByExclude(m map[string]interface{}, exclude []string) map[string]interface{} {
-	excluded := make(map[string]bool, len(exclude))
+	filtered := deepCopyMap(m)
 	for _, e := range exclude {
-		excluded[e] = true
-	}
-
-	filtered := make(map[string]interface{}, len(m))
-	for k, v := range m {
-		if !excluded[k] {
-			filtered[k] = v
+		if strings.Contains(e, ".") {
+			deleteNestedPath(filtered, e)
+		} else {
+			delete(filtered, e)
 		}
 	}
 	return filtered
 }
 
-// FilterResponse 根据 Route 的 response 配置过滤 result 的顶层字段
+// FilterResponse 根据 Route 的 response 配置过滤 result 的字段
 // 返回过滤后的新 map，不修改原始 result
 func FilterResponse(result interface{}, respFilter *router.ResponseFilter) interface{} {
 	if respFilter == nil {
