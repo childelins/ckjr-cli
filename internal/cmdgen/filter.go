@@ -6,18 +6,36 @@ import (
 	"github.com/childelins/ckjr-cli/internal/router"
 )
 
-// getNestedValue 沿点号路径在 map 中取值
-// "data.courseId" -> m["data"].(map)["courseId"]
+// getNestedValue 沿点号路径在 map 中取值，遇到数组自动穿透
+// "list.data.courseId" -> 穿透 data 数组，对每个元素取 courseId
 func getNestedValue(m map[string]interface{}, path string) (interface{}, bool) {
 	parts := strings.Split(path, ".")
 	var current interface{} = m
-	for _, part := range parts {
-		cm, ok := current.(map[string]interface{})
-		if !ok {
-			return nil, false
-		}
-		current, ok = cm[part]
-		if !ok {
+	for i, part := range parts {
+		switch v := current.(type) {
+		case map[string]interface{}:
+			val, ok := v[part]
+			if !ok {
+				return nil, false
+			}
+			current = val
+		case []interface{}:
+			remaining := strings.Join(parts[i:], ".")
+			var results []interface{}
+			for _, elem := range v {
+				em, ok := elem.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if val, ok := getNestedValue(em, remaining); ok {
+					results = append(results, val)
+				}
+			}
+			if len(results) == 0 {
+				return nil, false
+			}
+			return results, true
+		default:
 			return nil, false
 		}
 	}

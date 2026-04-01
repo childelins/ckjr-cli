@@ -157,6 +157,69 @@ func TestDeepCopyMap(t *testing.T) {
 	}
 }
 
+func TestGetNestedValue_ArrayTraversal(t *testing.T) {
+	m := map[string]interface{}{
+		"list": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"courseId": float64(1), "name": "Go"},
+				map[string]interface{}{"courseId": float64(2), "name": "Rust"},
+			},
+			"total": float64(2),
+		},
+	}
+
+	t.Run("traverses array elements", func(t *testing.T) {
+		val, ok := getNestedValue(m, "list.data.courseId")
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		want := []interface{}{float64(1), float64(2)}
+		if !reflect.DeepEqual(val, want) {
+			t.Errorf("got %v, want %v", val, want)
+		}
+	})
+
+	t.Run("non-array path still works", func(t *testing.T) {
+		val, ok := getNestedValue(m, "list.total")
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		if val != float64(2) {
+			t.Errorf("got %v, want 2", val)
+		}
+	})
+
+	t.Run("empty array returns false", func(t *testing.T) {
+		m := map[string]interface{}{
+			"list": map[string]interface{}{
+				"data": []interface{}{},
+			},
+		}
+		_, ok := getNestedValue(m, "list.data.courseId")
+		if ok {
+			t.Fatal("expected ok=false for empty array")
+		}
+	})
+
+	t.Run("array with non-map elements skips them", func(t *testing.T) {
+		m := map[string]interface{}{
+			"items": []interface{}{
+				map[string]interface{}{"id": float64(1)},
+				"not a map",
+				map[string]interface{}{"id": float64(3)},
+			},
+		}
+		val, ok := getNestedValue(m, "items.id")
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		want := []interface{}{float64(1), float64(3)}
+		if !reflect.DeepEqual(val, want) {
+			t.Errorf("got %v, want %v", val, want)
+		}
+	})
+}
+
 func TestDeepCopyMap_ArrayWithMaps(t *testing.T) {
 	original := map[string]interface{}{
 		"list": []interface{}{
