@@ -119,19 +119,59 @@ func deepCopyMap(m map[string]interface{}) map[string]interface{} {
 	return cp
 }
 
-// filterByFields 仅保留 fields 中列出的 key，支持点号路径访问嵌套字段
+// filterByFields 仅保留 fields 中列出的 key，支持点号路径和数组穿透
 func filterByFields(m map[string]interface{}, fields []string) map[string]interface{} {
 	filtered := make(map[string]interface{})
 	for _, f := range fields {
-		if strings.Contains(f, ".") {
-			if val, ok := getNestedValue(m, f); ok {
-				setNestedValue(filtered, f, val)
-			}
-		} else if val, ok := m[f]; ok {
-			filtered[f] = val
-		}
+		applyFieldPath(m, filtered, strings.Split(f, "."))
 	}
 	return filtered
+}
+
+// applyFieldPath 递归构建过滤后的 map，遇到数组自动穿透
+func applyFieldPath(src, dst map[string]interface{}, parts []string) {
+	if len(parts) == 0 {
+		return
+	}
+	key := parts[0]
+	val, ok := src[key]
+	if !ok {
+		return
+	}
+	if len(parts) == 1 {
+		dst[key] = val
+		return
+	}
+	remaining := parts[1:]
+	switch v := val.(type) {
+	case map[string]interface{}:
+		sub, ok := dst[key].(map[string]interface{})
+		if !ok {
+			sub = make(map[string]interface{})
+		}
+		applyFieldPath(v, sub, remaining)
+		if len(sub) > 0 {
+			dst[key] = sub
+		}
+	case []interface{}:
+		existingArr, _ := dst[key].([]interface{})
+		if existingArr == nil {
+			existingArr = make([]interface{}, len(v))
+			dst[key] = existingArr
+		}
+		for i, elem := range v {
+			em, ok := elem.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			dm, ok := existingArr[i].(map[string]interface{})
+			if !ok {
+				dm = make(map[string]interface{})
+				existingArr[i] = dm
+			}
+			applyFieldPath(em, dm, remaining)
+		}
+	}
 }
 
 // filterByExclude 移除 exclude 中列出的 key，支持点号路径删除嵌套字段

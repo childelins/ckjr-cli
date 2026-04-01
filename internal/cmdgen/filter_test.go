@@ -417,6 +417,81 @@ func TestFilterByExclude_NestedPathPreservesOriginal(t *testing.T) {
 	}
 }
 
+func TestFilterByFields_ArrayTraversal(t *testing.T) {
+	m := map[string]interface{}{
+		"list": map[string]interface{}{
+			"current_page": float64(1),
+			"data": []interface{}{
+				map[string]interface{}{"courseId": float64(1), "name": "Go", "secret": "x"},
+				map[string]interface{}{"courseId": float64(2), "name": "Rust", "secret": "y"},
+			},
+			"total": float64(2),
+		},
+	}
+	fields := []string{"list.data.courseId", "list.data.name", "list.total"}
+
+	result := filterByFields(m, fields)
+
+	want := map[string]interface{}{
+		"list": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"courseId": float64(1), "name": "Go"},
+				map[string]interface{}{"courseId": float64(2), "name": "Rust"},
+			},
+			"total": float64(2),
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestFilterByFields_ArrayTraversal_EmptyArray(t *testing.T) {
+	m := map[string]interface{}{
+		"list": map[string]interface{}{
+			"data":  []interface{}{},
+			"total": float64(0),
+		},
+	}
+	fields := []string{"list.data.courseId", "list.total"}
+
+	result := filterByFields(m, fields)
+
+	want := map[string]interface{}{
+		"list": map[string]interface{}{
+			"data":  []interface{}{},
+			"total": float64(0),
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestFilterByFields_ArrayTraversal_NonMapElements(t *testing.T) {
+	m := map[string]interface{}{
+		"items": []interface{}{
+			map[string]interface{}{"id": float64(1)},
+			"not a map",
+			map[string]interface{}{"id": float64(3)},
+		},
+	}
+	fields := []string{"items.id"}
+
+	result := filterByFields(m, fields)
+
+	want := map[string]interface{}{
+		"items": []interface{}{
+			map[string]interface{}{"id": float64(1)},
+			nil,
+			map[string]interface{}{"id": float64(3)},
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
 func TestFilterByExclude_ArrayTraversal(t *testing.T) {
 	m := map[string]interface{}{
 		"list": map[string]interface{}{
