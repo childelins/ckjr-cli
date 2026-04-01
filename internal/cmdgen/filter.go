@@ -57,23 +57,41 @@ func setNestedValue(m map[string]interface{}, path string, value interface{}) {
 	current[parts[len(parts)-1]] = value
 }
 
-// deleteNestedPath 沿点号路径从 map 中删除
+// deleteNestedPath 沿点号路径从 map 中删除，遇到数组自动穿透
 func deleteNestedPath(m map[string]interface{}, path string) bool {
 	parts := strings.Split(path, ".")
-	current := m
-	for i := 0; i < len(parts)-1; i++ {
-		cm, ok := current[parts[i]].(map[string]interface{})
-		if !ok {
+	return deleteNestedParts(m, parts)
+}
+
+func deleteNestedParts(m map[string]interface{}, parts []string) bool {
+	if len(parts) == 1 {
+		_, exists := m[parts[0]]
+		if !exists {
 			return false
 		}
-		current = cm
+		delete(m, parts[0])
+		return true
 	}
-	_, exists := current[parts[len(parts)-1]]
-	if !exists {
+	val, ok := m[parts[0]]
+	if !ok {
 		return false
 	}
-	delete(current, parts[len(parts)-1])
-	return true
+	switch v := val.(type) {
+	case map[string]interface{}:
+		return deleteNestedParts(v, parts[1:])
+	case []interface{}:
+		deleted := false
+		for _, elem := range v {
+			if em, ok := elem.(map[string]interface{}); ok {
+				if deleteNestedParts(em, parts[1:]) {
+					deleted = true
+				}
+			}
+		}
+		return deleted
+	default:
+		return false
+	}
 }
 
 // deepCopyValue 递归深拷贝 map/array/原始值

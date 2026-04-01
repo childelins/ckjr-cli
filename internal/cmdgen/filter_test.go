@@ -132,6 +132,59 @@ func TestDeleteNestedPath(t *testing.T) {
 	})
 }
 
+func TestDeleteNestedPath_ArrayTraversal(t *testing.T) {
+	t.Run("deletes field in each array element", func(t *testing.T) {
+		m := map[string]interface{}{
+			"list": map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{"id": float64(1), "secret": "x"},
+					map[string]interface{}{"id": float64(2), "secret": "y"},
+				},
+			},
+		}
+		deleted := deleteNestedPath(m, "list.data.secret")
+		if !deleted {
+			t.Fatal("expected deleted=true")
+		}
+		data := m["list"].(map[string]interface{})["data"].([]interface{})
+		for i, elem := range data {
+			em := elem.(map[string]interface{})
+			if _, exists := em["secret"]; exists {
+				t.Errorf("element %d: secret should be deleted", i)
+			}
+			if _, exists := em["id"]; !exists {
+				t.Errorf("element %d: id should be preserved", i)
+			}
+		}
+	})
+
+	t.Run("empty array returns false", func(t *testing.T) {
+		m := map[string]interface{}{
+			"list": map[string]interface{}{
+				"data": []interface{}{},
+			},
+		}
+		deleted := deleteNestedPath(m, "list.data.secret")
+		if deleted {
+			t.Fatal("expected deleted=false for empty array")
+		}
+	})
+
+	t.Run("skips non-map elements in array", func(t *testing.T) {
+		m := map[string]interface{}{
+			"items": []interface{}{
+				map[string]interface{}{"id": float64(1), "secret": "x"},
+				"not a map",
+				map[string]interface{}{"id": float64(2), "secret": "y"},
+			},
+		}
+		deleted := deleteNestedPath(m, "items.secret")
+		if !deleted {
+			t.Fatal("expected deleted=true")
+		}
+	})
+}
+
 func TestDeepCopyMap(t *testing.T) {
 	original := map[string]interface{}{
 		"a": float64(1),
