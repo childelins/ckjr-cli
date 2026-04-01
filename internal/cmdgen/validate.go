@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"time"
 
 	"github.com/childelins/ckjr-cli/internal/router"
 )
@@ -99,6 +100,21 @@ func validateType(fieldName string, value interface{}, expectedType string) *Fie
 	case "array":
 		if _, ok := value.([]interface{}); !ok {
 			return &FieldValidationError{Field: fieldName, Message: fmt.Sprintf("类型应为 array，实际为 %T", value)}
+		}
+	case "date":
+		str, ok := value.(string)
+		if !ok {
+			return &FieldValidationError{
+				Field:   fieldName,
+				Message: fmt.Sprintf("类型应为 date（字符串格式），实际为 %T", value),
+			}
+		}
+		const dateLayout = "2006-01-02 15:04:05"
+		if _, err := time.Parse(dateLayout, str); err != nil {
+			return &FieldValidationError{
+				Field:   fieldName,
+				Message: fmt.Sprintf("日期格式应为 YYYY-MM-DD HH:MM:SS，实际值 %q 无效: %s", str, err.Error()),
+			}
 		}
 	default:
 		return &FieldValidationError{Field: fieldName, Message: fmt.Sprintf("未知类型 %q", expectedType)}

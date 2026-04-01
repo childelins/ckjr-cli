@@ -1,6 +1,7 @@
 package cmdgen
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/childelins/ckjr-cli/internal/router"
@@ -79,6 +80,45 @@ func TestValidateType_Nil(t *testing.T) {
 	// nil 值应返回类型不匹配
 	if err := validateType("field", nil, "string"); err == nil {
 		t.Error("nil should fail for string type")
+	}
+}
+
+func TestValidateType_Date(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   interface{}
+		wantErr bool
+	}{
+		{"valid datetime", "2026-03-31 17:11:56", false},
+		{"valid boundary start", "2026-01-01 00:00:00", false},
+		{"valid boundary end", "2026-12-31 23:59:59", false},
+		{"missing time part", "2026-03-31", true},
+		{"wrong separator", "2026/03/31 17:11:56", true},
+		{"invalid date feb 30", "2026-02-30 12:00:00", true},
+		{"completely invalid", "not-a-date", true},
+		{"non-string type", float64(20260331), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateType("delayTime", tt.value, "date")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateType() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateType_Date_ErrorMessage(t *testing.T) {
+	// 非字符串应提示期望类型
+	err := validateType("delayTime", float64(123), "date")
+	if err == nil || !strings.Contains(err.Error(), "date（字符串格式）") {
+		t.Errorf("non-string error should mention date type, got: %v", err)
+	}
+
+	// 格式错误应提示期望格式
+	err = validateType("delayTime", "2026-03-31", "date")
+	if err == nil || !strings.Contains(err.Error(), "YYYY-MM-DD HH:MM:SS") {
+		t.Errorf("format error should show expected format, got: %v", err)
 	}
 }
 
