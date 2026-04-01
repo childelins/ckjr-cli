@@ -55,6 +55,39 @@ routes:
                 required: false
 ```
 
+### response 字段（响应过滤）
+
+可选配置，用于限制 API 响应的输出字段。`fields` 支持纯字符串和带描述的对象两种格式混合使用：
+
+```yaml
+    get:
+        method: GET
+        path: /admin/example/detail
+        description: 获取详情
+        template:
+            id:
+                description: ID
+                required: true
+                type: path
+        response:
+            fields:
+                - data.id                              # 纯字符串
+                - path: data.status                    # 带描述的对象格式
+                  description: "状态, 1-上架 2-下架"
+                - data.name
+            # 或使用黑名单模式：
+            # exclude: [data.internalFlag, data.detailInfo]
+```
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `fields` | list | 白名单，支持纯字符串（`- data.id`）和对象格式（`- path: ... description: ...`）混合 |
+| `exclude` | []string | 黑名单，排除列出的字段，支持点号路径 |
+
+`fields` 中带 `description` 的字段会在 `--template` 输出的 `response` 部分展示描述信息，帮助 AI 理解返回字段含义。
+
+`fields` 和 `exclude` 互斥，同时配置时 `fields` 优先。未配置 `response` 时全量输出。
+
 ### template 字段完整属性
 
 | 属性 | 类型 | 必填 | 说明 |
@@ -62,7 +95,7 @@ routes:
 | `description` | string | 是 | 字段描述 |
 | `required` | bool | 是 | 是否必填 |
 | `default` | any | 否 | 默认值 |
-| `type` | string | 否 | 类型：string/int/float/bool/array。设置后运行时校验 |
+| `type` | string | 否 | 类型：string/int/float/bool/array/path/date。`path` 用于替换 URL 路径占位符 `{xxx}`，`date` 格式为 `YYYY-MM-DD HH:MM:SS` |
 | `example` | string | 否 | 示例值 |
 | `min` | number | 否 | 最小值（适用于 type: int/float） |
 | `max` | number | 否 | 最大值（适用于 type: int/float） |
@@ -109,6 +142,59 @@ routes:
                 required: false
                 default: 3
                 type: int
+```
+
+### 路径参数
+
+当 API 路径包含动态参数时（如 `/admin/courses/{courseId}`），需要在 template 中用 `type: path` 声明路径参数：
+
+```yaml
+routes:
+    update:
+        method: PUT
+        path: /admin/courses/{courseId}
+        description: 更新课程
+        template:
+            courseId:
+                description: 课程ID
+                required: true
+                type: path       # 路径参数：替换路径中的 {courseId}
+            courseType:
+                description: 课程类型
+                required: true
+                type: int
+            name:
+                description: 课程名称
+                required: true
+                type: string
+```
+
+行为规则：
+- `type: path` 的字段值用于替换 `path` 中的对应占位符
+- 替换后从请求 body 中移除，不会发送给服务端
+- 不参与类型校验和约束校验，必填检查由替换逻辑负责
+- 路径参数缺失时立即报错，阻止请求发送
+
+多路径参数示例：
+
+```yaml
+routes:
+    update-chapter:
+        method: PUT
+        path: /courses/{courseId}/chapters/{chapterId}
+        template:
+            courseId:
+                description: 课程ID
+                required: true
+                type: path
+            chapterId:
+                description: 章节ID
+                required: true
+                type: path
+            title:
+                description: 章节标题
+                required: true
+                type: string
 ```
 
 ### 步骤
