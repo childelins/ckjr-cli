@@ -417,6 +417,38 @@ func TestFilterByExclude_NestedPathPreservesOriginal(t *testing.T) {
 	}
 }
 
+func TestFilterByExclude_ArrayTraversal(t *testing.T) {
+	m := map[string]interface{}{
+		"list": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"id": float64(1), "name": "Go", "secret": "x"},
+				map[string]interface{}{"id": float64(2), "name": "Rust", "secret": "y"},
+			},
+			"total": float64(2),
+		},
+	}
+	result := filterByExclude(m, []string{"list.data.secret"})
+
+	want := map[string]interface{}{
+		"list": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"id": float64(1), "name": "Go"},
+				map[string]interface{}{"id": float64(2), "name": "Rust"},
+			},
+			"total": float64(2),
+		},
+	}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+
+	// 原始数据不应被修改
+	origData := m["list"].(map[string]interface{})["data"].([]interface{})
+	if _, exists := origData[0].(map[string]interface{})["secret"]; !exists {
+		t.Error("original data should not be modified")
+	}
+}
+
 // TestFilterByFields_NestedDotKey tests that plain keys with no dot work as before
 func TestFilterByFields_BackwardCompatNoDot(t *testing.T) {
 	m := map[string]interface{}{
