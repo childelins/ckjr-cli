@@ -38,16 +38,16 @@ var ErrValidation = errors.New("参数校验失败")
 
 // Response API 响应格式
 type Response struct {
-	Data       interface{}            `json:"data"`
-	Message    string                 `json:"msg"`
-	StatusCode int                    `json:"statusCode"`
-	Errors     map[string]interface{} `json:"errors,omitempty"`
+	Data       interface{} `json:"data"`
+	Message    string      `json:"msg"`
+	StatusCode int         `json:"statusCode"`
+	Errors     interface{} `json:"errors,omitempty"`
 }
 
 // ValidationError 验证错误详情
 type ValidationError struct {
 	Message string
-	Errors  map[string]interface{}
+	Errors  interface{}
 }
 
 func (e *ValidationError) Error() string {
@@ -73,10 +73,10 @@ func (e *ResponseError) Detail() string {
 
 // APIError 服务端返回的业务错误（JSON 格式，如 402/403/500 等）
 type APIError struct {
-	StatusCode int                    // HTTP 状态码
-	Message    string                 // 服务端 message 字段
-	ServerCode int                    // 服务端 status_code 字段
-	Errors     map[string]interface{} // 服务端 errors 字段
+	StatusCode int         // HTTP 状态码
+	Message    string      // 服务端 message 字段
+	ServerCode int         // 服务端 status_code 字段
+	Errors     interface{} // 服务端 errors 字段（string 或 map[string]interface{}）
 }
 
 func (e *APIError) Error() string {
@@ -360,7 +360,9 @@ func IsValidationError(err error) bool {
 func GetValidationErrors(err error) map[string]interface{} {
 	var ve *ValidationError
 	if errors.As(err, &ve) {
-		return ve.Errors
+		if m, ok := ve.Errors.(map[string]interface{}); ok {
+			return m
+		}
 	}
 	return nil
 }

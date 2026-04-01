@@ -567,7 +567,7 @@ func TestAPIError(t *testing.T) {
 	if apiErr.ServerCode != 403 {
 		t.Errorf("ServerCode = %d, want 403", apiErr.ServerCode)
 	}
-	if apiErr.Errors["detail"] != "权限不足" {
+	if errs, ok := apiErr.Errors.(map[string]interface{}); !ok || errs["detail"] != "权限不足" {
 		t.Errorf("Errors = %v, want detail=权限不足", apiErr.Errors)
 	}
 }
@@ -649,6 +649,38 @@ func TestClientDo_BusinessError(t *testing.T) {
 	}
 	if apiErr.Message != "未找到该用户" {
 		t.Errorf("Message = %q, want %q", apiErr.Message, "未找到该用户")
+	}
+}
+
+func TestClientDo_ErrorsAsString(t *testing.T) {
+	// 服务端返回 errors 为 string 而非 map 时，不应导致 JSON 解析失败
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"errors": "请刷新重试 [原错误信息：Undefined index: validAt]",
+			"ext": {"s": "c160fff452c3"},
+			"msg": "系统异常:c160fff452c3",
+			"statusCode": 500
+		}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	var result interface{}
+	err := client.Do("PUT", "/admin/courses/1", nil, &result)
+	if err == nil {
+		t.Fatal("Do() should return error for business status 500")
+	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error should be APIError, got %T: %v", err, err)
+	}
+	if apiErr.ServerCode != 500 {
+		t.Errorf("ServerCode = %d, want 500", apiErr.ServerCode)
+	}
+	if apiErr.Message != "系统异常:c160fff452c3" {
+		t.Errorf("Message = %q", apiErr.Message)
 	}
 }
 

@@ -91,7 +91,14 @@ func ReplacePath(path string, input map[string]interface{}, template map[string]
 	result := pathParamRe.ReplaceAllStringFunc(path, func(match string) string {
 		name := match[1 : len(match)-1]
 		val := input[name]
-		return url.PathEscape(fmt.Sprintf("%v", val))
+		var s string
+		switch v := val.(type) {
+		case float64:
+			s = fmt.Sprintf("%d", int64(v))
+		default:
+			s = fmt.Sprintf("%v", v)
+		}
+		return url.PathEscape(s)
 	})
 
 	// 从 input 中移除路径参数

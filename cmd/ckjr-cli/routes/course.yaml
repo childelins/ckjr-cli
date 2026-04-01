@@ -102,7 +102,7 @@ routes:
                 - path: data.courseType
                   description: "课程类型, 0-视频 1-音频 2-图文"
                 - path: data.status
-                  description: "上架状态, 1-已上架 2-已下架"
+                  description: "上架状态, 1-已上架 2-已下架 3-定时上架"
                 - path: data.isSaleOnly
                   description: "是否单独售卖, 1-是 0-否"
                 - data.price
@@ -142,6 +142,11 @@ routes:
                 default: 1
                 type: int
                 max: 100
+            sort:
+                description: 排序字段, 1-按时间排序, 3-按序号排序(默认)
+                required: true
+                type: int
+                default: 3
             status:
                 description: 上架状态, 1-已上架 2-已下架
                 required: false
@@ -155,7 +160,7 @@ routes:
                 - path: list.data.courseType
                   description: "课程类型, 0-视频 1-音频 2-图文"
                 - path: list.data.status
-                  description: "上架状态, 1-已上架 2-已下架"
+                  description: "上架状态, 1-已上架 2-已下架 3-定时上架"
                 - path: list.data.isSaleOnly
                   description: "是否单独售卖, 1-是 0-否"
                 - list.data.price
@@ -164,8 +169,9 @@ routes:
                 - list.data.courseAvatar
                 - list.data.createdAt
                 - path: list.data.contentAuditStatus
-                  description: 内容审核状态
-                - list.data.adminUser
+                  description: 内容审核状态, -1 审核失败, 1 审核通过, 0 审核中
+                - path: list.data.adminUser
+                  description: 创建者
                 - list.from
                 - list.to
                 - list.total

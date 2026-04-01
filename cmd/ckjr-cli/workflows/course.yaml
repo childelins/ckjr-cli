@@ -1,0 +1,181 @@
+name: course-workflows
+description: 课程创建工作流，支持视频/音频/图文课程
+
+workflows:
+  create-video-course:
+    description: 创建视频课程并获取访问链接
+    triggers:
+      - 创建视频课程
+      - 新建视频课程
+    allowed-routes:
+      - course
+      - common
+    inputs:
+      - name: name
+        description: 课程名称
+        required: true
+      - name: courseAvatar
+        description: 课程封面 URL
+        required: true
+      - name: detailInfo
+        description: 课程详情
+        required: true
+        hint: 根据用户描述生成富文本 HTML
+      - name: payType
+        description: 售卖类型, 1-免费 2-付费 3-加密
+        required: true
+      - name: price
+        description: 价格
+        required: true
+      - name: playMode
+        description: 播放模式, 1-横屏(默认) 2-竖屏
+        required: false
+        hint: 默认横屏(1)
+    steps:
+      - id: create
+        description: 创建视频课程
+        command: course create
+        params:
+          name: "{{inputs.name}}"
+          courseAvatar: "{{inputs.courseAvatar}}"
+          detailInfo: "{{inputs.detailInfo}}"
+          payType: "{{inputs.payType}}"
+          price: "{{inputs.price}}"
+          playMode: "{{inputs.playMode}}"
+          courseType: 0
+          isSaleOnly: 1
+          status: 1
+        output:
+          courseId: "response.courseId"
+      - id: get-link
+        description: 获取公众号端访问链接和二维码
+        command: common link
+        params:
+          prodId: "{{steps.create.courseId}}"
+          prodType: video
+        output:
+          url: "response.url"
+          qrcodeImg: "response.img"
+    summary: |
+      视频课程创建完成：
+      - 名称：{{inputs.name}}
+      - ID：{{steps.create.courseId}}
+      - 访问链接：{{steps.get-link.url}}
+      - 二维码：{{steps.get-link.qrcodeImg}}
+
+  create-audio-course:
+    description: 创建音频课程并获取访问链接
+    triggers:
+      - 创建音频课程
+      - 新建音频课程
+    allowed-routes:
+      - course
+      - common
+    inputs:
+      - name: name
+        description: 课程名称
+        required: true
+      - name: courseAvatar
+        description: 课程封面 URL
+        required: true
+      - name: detailInfo
+        description: 课程详情
+        required: true
+        hint: 根据用户描述生成富文本 HTML
+      - name: payType
+        description: 售卖类型, 1-免费 2-付费 3-加密
+        required: true
+      - name: price
+        description: 价格
+        required: true
+    steps:
+      - id: create
+        description: 创建音频课程
+        command: course create
+        params:
+          name: "{{inputs.name}}"
+          courseAvatar: "{{inputs.courseAvatar}}"
+          detailInfo: "{{inputs.detailInfo}}"
+          payType: "{{inputs.payType}}"
+          price: "{{inputs.price}}"
+          courseType: 1
+          isSaleOnly: 1
+          status: 1
+        output:
+          courseId: "response.courseId"
+      - id: get-link
+        description: 获取公众号端访问链接和二维码
+        command: common link
+        params:
+          prodId: "{{steps.create.courseId}}"
+          prodType: audio
+        output:
+          url: "response.url"
+          qrcodeImg: "response.img"
+    summary: |
+      音频课程创建完成：
+      - 名称：{{inputs.name}}
+      - ID：{{steps.create.courseId}}
+      - 访问链接：{{steps.get-link.url}}
+      - 二维码：{{steps.get-link.qrcodeImg}}
+
+  create-article-course:
+    description: 创建图文课程并获取访问链接
+    triggers:
+      - 创建图文课程
+      - 新建图文课程
+    allowed-routes:
+      - course
+      - common
+    inputs:
+      - name: name
+        description: 课程名称
+        required: true
+      - name: courseAvatar
+        description: 课程封面 URL
+        required: true
+      - name: detailInfo
+        description: 课程详情
+        required: true
+        hint: 根据用户描述生成富文本 HTML
+      - name: payType
+        description: 售卖类型, 1-免费 2-付费 3-加密
+        required: true
+      - name: price
+        description: 价格
+        required: true
+      - name: articleType
+        description: 图文模式, 1-图文(默认) 2-文章 3-多图
+        required: false
+        hint: 默认图文模式(1)
+    steps:
+      - id: create
+        description: 创建图文课程
+        command: course create
+        params:
+          name: "{{inputs.name}}"
+          courseAvatar: "{{inputs.courseAvatar}}"
+          detailInfo: "{{inputs.detailInfo}}"
+          payType: "{{inputs.payType}}"
+          price: "{{inputs.price}}"
+          articleType: "{{inputs.articleType}}"
+          courseType: 2
+          isSaleOnly: 1
+          status: 1
+        output:
+          courseId: "response.courseId"
+      - id: get-link
+        description: 获取公众号端访问链接和二维码
+        command: common link
+        params:
+          prodId: "{{steps.create.courseId}}"
+          prodType: text
+        output:
+          url: "response.url"
+          qrcodeImg: "response.img"
+    summary: |
+      图文课程创建完成：
+      - 名称：{{inputs.name}}
+      - ID：{{steps.create.courseId}}
+      - 访问链接：{{steps.get-link.url}}
+      - 二维码：{{steps.get-link.qrcodeImg}}

@@ -8,7 +8,37 @@
 - 2026-03-28: Update 命令 (Phase 100-104)、Field 类型与约束校验 (Phase 105-111)
 - 2026-03-29: YAML 兜底测试、AI 友好错误处理、生产环境静默日志
 - 2026-03-30: Workflow YAML 快速创建 (Task 1-3, commit a70bb2e)
-- 2026-03-31: 路由路径参数替换 (Phase 1-5, pathparam.go/validate.go/cmdgen.go 集成, commits 0654470-0410d8c)
+
+## 2026-03-31 路由路径参数替换
+
+### Phase 1-2: IsPathParam + extractPlaceholders + PathParamError + ReplacePath
+- 创建 internal/cmdgen/pathparam.go + pathparam_test.go
+- IsPathParam: 判断 field.Type == "path"
+- extractPlaceholders: 正则提取 {xxx} 占位符，去重保序
+- PathParamError: Missing/Undeclared 双错误类型
+- ReplacePath: 路径参数替换、校验、URL 编码、从 input 删除已替换参数
+- 16 个测试全部通过，构建通过
+- commit 0654470
+
+### Phase 3: validate.go 修改
+- validateTypes: 添加 `IsPathParam(field)` 跳过条件
+- validateRequiredErrors: 重写为直接遍历并跳过 path 类型字段
+- validateConstraints: 添加 `IsPathParam(field)` 跳过条件
+- 3 个新测试 + 全部原有测试通过
+- commit 6671e85
+
+### Phase 4: cmdgen.go 集成 ReplacePath
+- buildSubCommand: applyDefaults 后调用 ReplacePath，ValidateAll 前
+- DoCtx 使用 resolvedPath 替代 route.Path
+- 集成测试验证 {courseId} 被替换为实际值
+- 17 个包 49 个测试全部通过
+- commit 5aa0333
+
+### Phase 5: YAML 更新
+- course.yaml update 路由 template 中添加 courseId 字段 (type: path, required: true)
+- yaml_validate_test.go validTypes 增加 "path" 类型
+- 17 个包全部通过，go vet 和 go build 无错误
+- commit 0410d8c
 
 ## 2026-04-01 Response Filter 实现计划
 

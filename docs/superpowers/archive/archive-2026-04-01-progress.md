@@ -5,10 +5,64 @@
 - 2026-03-25: ckjr-cli 初始实现、API 错误处理、Request Logging、ckjr-agent Skill、私有仓库安装
 - 2026-03-26: Field Type/Example、CLI 重命名、curl-to-yaml、Skill 自发现、Request Body 日志、Workflow YAML、Routes Resource→Name、Wiki 文档、Log Environment Modes、Version Flag ldflags
 - 2026-03-27: YAML 迁移到 config/、cmd 目录重组、本地构建发布、install.sh 简化
-- 2026-03-28: Update 命令 (Phase 100-104)、Field 类型与约束校验 (Phase 105-111)
-- 2026-03-29: YAML 兜底测试、AI 友好错误处理、生产环境静默日志
-- 2026-03-30: Workflow YAML 快速创建 (Task 1-3, commit a70bb2e)
-- 2026-03-31: 路由路径参数替换 (Phase 1-5, pathparam.go/validate.go/cmdgen.go 集成, commits 0654470-0410d8c)
+
+## 2026-03-28 Update 命令实现 + Field 校验
+
+### Phase 100-104: Update 命令
+- 版本比较、GitHub API 查询、下载替换、Cobra 命令、注册到 root.go
+- 全部通过
+
+### Phase 105-111: Field 类型与约束校验
+- Field 结构扩展、类型校验、约束校验、集成到 cmdgen、printTemplate 约束展示、curlparse float
+- 全部 16 个包通过
+
+## 2026-03-29 YAML 测试 + AI 错误 + 静默日志
+
+### Phase 112-113: YAML 兜底测试
+- 创建 yaml_validate_test.go，17 个包全部通过
+
+### AI 友好错误处理 (Task 6-7)
+- root 命令 JSON 输出、集成测试，17 个包全部通过
+
+### 生产环境静默日志
+- ERROR 级别文件日志，verbose stderr 独立 INFO，commit 449b8dc
+
+## 2026-03-30 Workflow YAML 快速创建
+
+### Task 1-3: InitWorkflowFile
+- 创建 internal/yamlgen/workflow.go + workflow_test.go
+- commit a70bb2e
+
+## 2026-03-31 路由路径参数替换
+
+### Phase 1-2: IsPathParam + extractPlaceholders + PathParamError + ReplacePath
+- 创建 internal/cmdgen/pathparam.go + pathparam_test.go
+- IsPathParam: 判断 field.Type == "path"
+- extractPlaceholders: 正则提取 {xxx} 占位符，去重保序
+- PathParamError: Missing/Undeclared 双错误类型
+- ReplacePath: 路径参数替换、校验、URL 编码、从 input 删除已替换参数
+- 16 个测试全部通过，构建通过
+- commit 0654470
+
+### Phase 3: validate.go 修改
+- validateTypes: 添加 `IsPathParam(field)` 跳过条件
+- validateRequiredErrors: 重写为直接遍历并跳过 path 类型字段
+- validateConstraints: 添加 `IsPathParam(field)` 跳过条件
+- 3 个新测试 + 全部原有测试通过
+- commit 6671e85
+
+### Phase 4: cmdgen.go 集成 ReplacePath
+- buildSubCommand: applyDefaults 后调用 ReplacePath，ValidateAll 前
+- DoCtx 使用 resolvedPath 替代 route.Path
+- 集成测试验证 {courseId} 被替换为实际值
+- 17 个包 49 个测试全部通过
+- commit 5aa0333
+
+### Phase 5: YAML 更新
+- course.yaml update 路由 template 中添加 courseId 字段 (type: path, required: true)
+- yaml_validate_test.go validTypes 增加 "path" 类型
+- 17 个包全部通过，go vet 和 go build 无错误
+- commit 0410d8c
 
 ## 2026-04-01 Response Filter 实现计划
 
@@ -88,48 +142,3 @@
 - Status: complete (4389f52)
 - course.yaml list 路由添加 response.fields 白名单: 8 个 list.data 字段 + list.total/current_page/per_page
 - 构建通过
-
-## 2026-04-01 Response Field Descriptions
-
-### Phase 1: ResponseField 类型 + 自定义 UnmarshalYAML
-- Status: complete (9a1fb4e)
-- router.go: 新增 ResponseField 结构体 (Path+Description)，ResponseFilter.Fields 从 []string 改为 []ResponseField
-- 自定义 UnmarshalYAML 支持纯字符串和 path+description 对象两种 YAML 格式
-- FieldPaths() 方法提取纯路径列表
-- 2 个新测试 (MixedFieldFormats + BackwardCompat) + 原有测试全部通过
-
-### Phase 2: 迁移 FilterResponse 使用 FieldPaths
-- Status: complete (db8ae4c)
-- filter.go: FilterResponse 改用 FieldPaths() 提取路径列表
-- filter_test.go + cmdgen_test.go: 所有 ResponseFilter 构造从 []string 迁移为 []ResponseField
-- 全量 80+ 测试通过，无回归
-
-### Phase 3: --template 输出 request/response 结构
-- Status: complete (f3b6144)
-- cmdgen.go: printTemplateTo 输出结构从扁平改为 { "request": {...}, "response": {...} }
-- 新增 2 个测试 (WithResponse + WithoutResponse)，更新 3 个已有测试的解析逻辑
-- 全量测试通过
-
-### Phase 4: 为 course.yaml 添加响应字段描述
-- Status: complete (6c95f9b)
-- course.yaml list 路由: 6 个字段添加描述 (courseType/status/isSaleOnly/payType/contentAuditStatus/name)
-- course.yaml get 路由: 5 个字段添加描述 (courseType/status/isSaleOnly/payType/playMode/articleType)
-- 构建通过
-
-## 2026-04-01 date 类型支持
-
-### Phase 1: date 类型校验
-- Status: complete (229cb4b)
-- validate.go: import "time"，validateType 新增 case "date" 分支
-- time.Parse 校验 "2006-01-02 15:04:05" 格式和日期合法性
-- 10 个测试 (8 个 table-driven + 2 个错误信息断言) 全部通过
-
-### Phase 2: --template 输出 date note
-- Status: complete (4bfd67c)
-- cmdgen.go: printTemplateTo 中 date 类型添加 note "日期格式: YYYY-MM-DD HH:MM:SS"
-- 1 个新测试 (DateFieldNote) + 全量 90+ 测试通过，无回归
-
-### Phase 3: 更新文档
-- Status: complete (407464b)
-- core-concepts.md: 类型表新增 date 行
-- extending.md: type 属性说明补充 date 类型

@@ -294,7 +294,7 @@ workflows:
           aikbId: "response.aikbId"
       - id: get-link
         description: 获取公众号端访问链接
-        command: common getLink
+        command: common link
         params:
           prodId: "{{steps.create.aikbId}}"
 ```

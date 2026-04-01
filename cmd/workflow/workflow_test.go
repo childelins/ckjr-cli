@@ -40,7 +40,7 @@ workflows:
           instructions: "{{inputs.instructions}}"
       - id: get-link
         description: 获取访问链接
-        command: common getLink
+        command: common link
         params:
           prodId: "{{steps.create.aikbId}}"
         output:
@@ -97,7 +97,7 @@ func TestWorkflowDescribe(t *testing.T) {
 		"== 执行步骤 ==",
 		"agent create",
 		"agent update",
-		"common getLink",
+		"common link",
 		"== 完成摘要 ==",
 	}
 	for _, check := range checks {

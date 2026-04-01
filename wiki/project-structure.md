@@ -36,7 +36,7 @@ cmd/
     embed.go           # go:embed all:routes all:workflows，嵌入 YAML 配置
     routes/
       agent.yaml       # 智能体模块（create/delete/get/list/update）
-      common.yaml      # 公共接口模块（getLink）
+      common.yaml      # 公共接口模块（link）
     workflows/
       agent.yaml       # 智能体工作流（create-agent）
 ```

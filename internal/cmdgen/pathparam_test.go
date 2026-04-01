@@ -191,6 +191,21 @@ func TestReplacePath_NilValue(t *testing.T) {
 	}
 }
 
+func TestReplacePath_LargeFloat64NotScientific(t *testing.T) {
+	// JSON 反序列化后大整数变成 float64，%v 会输出科学计数法
+	input := map[string]interface{}{"courseId": float64(15427611)}
+	tmpl := map[string]router.Field{
+		"courseId": {Type: "path", Required: true},
+	}
+	path, err := ReplacePath("/admin/courses/{courseId}", input, tmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path != "/admin/courses/15427611" {
+		t.Errorf("got %q, want /admin/courses/15427611", path)
+	}
+}
+
 func TestReplacePath_SpecialChars(t *testing.T) {
 	input := map[string]interface{}{"name": "hello world/test"}
 	tmpl := map[string]router.Field{
