@@ -23,3 +23,7 @@ Go 的 init() 在 TestMain 之前执行。如果 init() 依赖需要通过 TestM
 ## cobra 命令延迟注册与测试
 
 当命令在 `Execute()` 中动态注册（如 workflow 需要 yamlFS），TestMain 需要显式注册该命令，否则测试中 rootCmd.Execute() 会报 "unknown command"。
+
+## filterByFields get-then-set 模式对数组的局限
+
+当 `getNestedValue` 穿透数组后返回的是扁平化的值列表（如 `[1, 2]`），再用 `setNestedValue` 设置到目标 map 时会丢失数组结构 -- 值被放入嵌套 map 而非保持在数组元素中。解决方案是将 `filterByFields` 重构为 `applyFieldPath` 递归构建模式，在遍历源结构时同步构建目标结构，遇到数组时对每个元素分别构建对应的目标 map。重构后不存在的嵌套路径需要额外处理：递归到空 sub map 后检查 `len(sub) > 0` 再写入 dst，避免产生空的中间 map 结构。
