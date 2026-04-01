@@ -24,10 +24,50 @@ type Field struct {
 	Pattern   string `yaml:"pattern,omitempty"`
 }
 
+// ResponseField 定义响应字段（路径 + 可选描述）
+type ResponseField struct {
+	Path        string `yaml:"path"`
+	Description string `yaml:"description,omitempty"`
+}
+
 // ResponseFilter 定义响应字段过滤规则
 type ResponseFilter struct {
-	Fields  []string `yaml:"fields,omitempty"`
-	Exclude []string `yaml:"exclude,omitempty"`
+	Fields  []ResponseField `yaml:"-"`
+	Exclude []string        `yaml:"exclude,omitempty"`
+}
+
+// FieldPaths 返回所有字段的路径列表（供过滤逻辑使用）
+func (rf *ResponseFilter) FieldPaths() []string {
+	paths := make([]string, len(rf.Fields))
+	for i, f := range rf.Fields {
+		paths[i] = f.Path
+	}
+	return paths
+}
+
+// UnmarshalYAML 自定义解析，支持纯字符串和 path+description 对象两种格式
+func (rf *ResponseFilter) UnmarshalYAML(value *yaml.Node) error {
+	var raw struct {
+		Fields  []yaml.Node `yaml:"fields"`
+		Exclude []string    `yaml:"exclude"`
+	}
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+	rf.Exclude = raw.Exclude
+	for _, node := range raw.Fields {
+		switch node.Kind {
+		case yaml.ScalarNode:
+			rf.Fields = append(rf.Fields, ResponseField{Path: node.Value})
+		case yaml.MappingNode:
+			var field ResponseField
+			if err := node.Decode(&field); err != nil {
+				return err
+			}
+			rf.Fields = append(rf.Fields, field)
+		}
+	}
+	return nil
 }
 
 // Route 定义单个路由

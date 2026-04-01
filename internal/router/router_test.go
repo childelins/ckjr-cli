@@ -263,6 +263,72 @@ response:
 	}
 }
 
+func TestResponseFilter_MixedFieldFormats(t *testing.T) {
+	yamlData := `
+fields:
+  - data.courseId
+  - path: data.courseType
+    description: "课程类型, 0-视频 1-音频 2-图文"
+  - path: data.status
+    description: "上架状态, 1-已上架 2-已下架"
+  - data.name
+`
+	var rf ResponseFilter
+	if err := yaml.Unmarshal([]byte(yamlData), &rf); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(rf.Fields) != 4 {
+		t.Fatalf("Fields count = %d, want 4", len(rf.Fields))
+	}
+
+	// 纯字符串格式
+	if rf.Fields[0].Path != "data.courseId" {
+		t.Errorf("Fields[0].Path = %q, want data.courseId", rf.Fields[0].Path)
+	}
+	if rf.Fields[0].Description != "" {
+		t.Errorf("Fields[0].Description = %q, want empty", rf.Fields[0].Description)
+	}
+
+	// 对象格式
+	if rf.Fields[1].Path != "data.courseType" {
+		t.Errorf("Fields[1].Path = %q, want data.courseType", rf.Fields[1].Path)
+	}
+	if rf.Fields[1].Description != "课程类型, 0-视频 1-音频 2-图文" {
+		t.Errorf("Fields[1].Description = %q", rf.Fields[1].Description)
+	}
+
+	// FieldPaths 返回纯路径列表
+	paths := rf.FieldPaths()
+	want := []string{"data.courseId", "data.courseType", "data.status", "data.name"}
+	for i, p := range paths {
+		if p != want[i] {
+			t.Errorf("FieldPaths()[%d] = %q, want %q", i, p, want[i])
+		}
+	}
+}
+
+func TestResponseFilter_BackwardCompat_PureStrings(t *testing.T) {
+	yamlData := `
+fields:
+  - courseId
+  - name
+  - status
+`
+	var rf ResponseFilter
+	if err := yaml.Unmarshal([]byte(yamlData), &rf); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(rf.Fields) != 3 {
+		t.Fatalf("Fields count = %d, want 3", len(rf.Fields))
+	}
+	paths := rf.FieldPaths()
+	if paths[0] != "courseId" || paths[1] != "name" || paths[2] != "status" {
+		t.Errorf("FieldPaths() = %v", paths)
+	}
+}
+
 func TestRoute_ResponseFilter_Nil(t *testing.T) {
 	yamlData := `
 method: GET
