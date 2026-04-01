@@ -1,42 +1,6 @@
-# Response Field Descriptions - 任务计划
+# 任务计划
 
-> Source plan: docs/superpowers/plans/2026-04-01-response-field-descriptions.md
-
-## 概述
-
-让 response fields 支持描述信息，--template 输出区分 request/response 层级
-
----
-
-## Phase 1: ResponseField 类型 + 自定义 UnmarshalYAML
-
-- **Source**: Plan -> Task 1
-- **Status**: complete (9a1fb4e)
-- **Description**: 将 ResponseFilter.Fields 从 []string 改为 []ResponseField，添加自定义 UnmarshalYAML 支持纯字符串和对象两种格式，添加 FieldPaths() 方法
-
----
-
-## Phase 2: 迁移 FilterResponse 使用 FieldPaths
-
-- **Source**: Plan -> Task 2
-- **Status**: complete (db8ae4c)
-- **Description**: 修改 filter.go 使用 FieldPaths() 而不是直接访问 Fields，更新所有测试中的 ResponseFilter 构造方式
-
----
-
-## Phase 3: --template 输出 request/response 结构
-
-- **Source**: Plan -> Task 3
-- **Status**: complete (f3b6144)
-- **Description**: 修改 printTemplateTo 输出结构从扁平改为 { "request": {...}, "response": {...} }，更新所有相关测试
-
----
-
-## Phase 4: 为 course.yaml 添加响应字段描述
-
-- **Source**: Plan -> Task 4
-- **Status**: complete (6c95f9b)
-- **Description**: 更新 course.yaml list 和 get 路由的 response fields，从纯字符串改为带描述的混合格式
+当前无活跃任务。
 
 ---
 
@@ -78,4 +42,6 @@
 - [已完成] 路由路径参数替换 (Phase 1-5, 2026-03-31)
 - [已完成] Response Filter 实现 (Task 1-6, 2026-04-01)
 - [已完成] Response Filter 自动数组穿透 (Phase 1-7, 2026-04-01)
+- [已完成] Response Field Descriptions (Phase 1-4, 2026-04-01)
+- [已完成] date 类型支持 (Phase 1-3, 2026-04-01)
 - 完整历史详见 docs/superpowers/archive/
