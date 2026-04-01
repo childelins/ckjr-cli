@@ -563,7 +563,11 @@ func TestFilterResponse_NestedFields(t *testing.T) {
 			"ext":      map[string]interface{}{"foo": "bar"},
 		},
 	}
-	filter := &router.ResponseFilter{Fields: []string{"code", "data.courseId", "data.name"}}
+	filter := &router.ResponseFilter{Fields: []router.ResponseField{
+		{Path: "code"},
+		{Path: "data.courseId"},
+		{Path: "data.name"},
+	}}
 
 	result := FilterResponse(m, filter)
 
@@ -732,14 +736,14 @@ func TestFilterResponse_ListWithFields(t *testing.T) {
 		},
 	}
 	filter := &router.ResponseFilter{
-		Fields: []string{
-			"list.data.courseId",
-			"list.data.name",
-			"list.data.courseAvatar",
-			"list.data.price",
-			"list.total",
-			"list.current_page",
-			"list.per_page",
+		Fields: []router.ResponseField{
+			{Path: "list.data.courseId"},
+			{Path: "list.data.name"},
+			{Path: "list.data.courseAvatar"},
+			{Path: "list.data.price"},
+			{Path: "list.total"},
+			{Path: "list.current_page"},
+			{Path: "list.per_page"},
 		},
 	}
 
@@ -813,7 +817,7 @@ func TestFilterResponse_NonMapResult(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filter := &router.ResponseFilter{Fields: []string{"a"}}
+			filter := &router.ResponseFilter{Fields: []router.ResponseField{{Path: "a"}}}
 			got := FilterResponse(tt.result, filter)
 			if got != tt.result {
 				t.Errorf("non-map should pass through, got %v", got)
@@ -824,7 +828,7 @@ func TestFilterResponse_NonMapResult(t *testing.T) {
 
 func TestFilterResponse_SliceResult(t *testing.T) {
 	slice := []interface{}{float64(1), float64(2)}
-	filter := &router.ResponseFilter{Fields: []string{"a"}}
+	filter := &router.ResponseFilter{Fields: []router.ResponseField{{Path: "a"}}}
 	got := FilterResponse(slice, filter)
 	gotSlice, ok := got.([]interface{})
 	if !ok {
@@ -837,7 +841,10 @@ func TestFilterResponse_SliceResult(t *testing.T) {
 
 func TestFilterResponse_FieldsOnly(t *testing.T) {
 	m := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(3)}
-	filter := &router.ResponseFilter{Fields: []string{"a", "c"}}
+	filter := &router.ResponseFilter{Fields: []router.ResponseField{
+		{Path: "a"},
+		{Path: "c"},
+	}}
 
 	result := FilterResponse(m, filter)
 
@@ -863,7 +870,7 @@ func TestFilterResponse_FieldsAndExclude(t *testing.T) {
 	// 同时配置时 fields 优先，exclude 被忽略
 	m := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(3)}
 	filter := &router.ResponseFilter{
-		Fields:  []string{"a"},
+		Fields:  []router.ResponseField{{Path: "a"}},
 		Exclude: []string{"a", "b"},
 	}
 
@@ -877,7 +884,7 @@ func TestFilterResponse_FieldsAndExclude(t *testing.T) {
 
 func TestFilterResponse_EmptyFields(t *testing.T) {
 	m := map[string]interface{}{"a": float64(1)}
-	filter := &router.ResponseFilter{Fields: []string{}}
+	filter := &router.ResponseFilter{Fields: []router.ResponseField{}}
 
 	result := FilterResponse(m, filter)
 
@@ -900,7 +907,10 @@ func TestFilterResponse_EmptyExclude(t *testing.T) {
 
 func TestFilterResponse_FieldNotFound(t *testing.T) {
 	m := map[string]interface{}{"a": float64(1)}
-	filter := &router.ResponseFilter{Fields: []string{"a", "nonexistent"}}
+	filter := &router.ResponseFilter{Fields: []router.ResponseField{
+		{Path: "a"},
+		{Path: "nonexistent"},
+	}}
 
 	result := FilterResponse(m, filter)
 
@@ -913,7 +923,7 @@ func TestFilterResponse_FieldNotFound(t *testing.T) {
 
 func TestFilterResponse_EmptyResult(t *testing.T) {
 	m := map[string]interface{}{}
-	filter := &router.ResponseFilter{Fields: []string{"a"}}
+	filter := &router.ResponseFilter{Fields: []router.ResponseField{{Path: "a"}}}
 
 	result := FilterResponse(m, filter)
 

@@ -200,8 +200,9 @@ func FilterResponse(result interface{}, respFilter *router.ResponseFilter) inter
 		return result
 	}
 
-	if len(respFilter.Fields) > 0 {
-		return filterByFields(m, respFilter.Fields)
+	paths := respFilter.FieldPaths()
+	if len(paths) > 0 {
+		return filterByFields(m, paths)
 	}
 
 	if len(respFilter.Exclude) > 0 {

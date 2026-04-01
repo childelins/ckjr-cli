@@ -563,7 +563,11 @@ func TestBuildSubCommand_ResponseFilter(t *testing.T) {
 					"courseId": {Type: "path", Required: true},
 				},
 				Response: &router.ResponseFilter{
-					Fields: []string{"courseId", "name", "status"},
+					Fields: []router.ResponseField{
+						{Path: "courseId"},
+						{Path: "name"},
+						{Path: "status"},
+					},
 				},
 			},
 		},
