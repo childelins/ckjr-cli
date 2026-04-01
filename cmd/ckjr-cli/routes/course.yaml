@@ -23,9 +23,9 @@ routes:
             articleType:
                 description: |
                     图文模式选择，仅用于图文课程
-                        - type=1(图文模式, 推荐): 基础图片文本结合模式，简洁明了，适用于课程引流
-                        - type=2(文章模式): 适合擅长文字写作的商家，做付费文章，文字分享
-                        - type=3(多图模式): 适合擅长用图片讲解具体步骤的商家，图片为主、文字为辅，适用于技术教程、辅助教学
+                    - type=1(图文模式, 推荐): 基础图片文本结合模式，简洁明了，适用于课程引流
+                    - type=2(文章模式): 适合擅长文字写作的商家，做付费文章，文字分享
+                    - type=3(多图模式): 适合擅长用图片讲解具体步骤的商家，图片为主、文字为辅，适用于技术教程、辅助教学
                 required: false
                 type: int
             articleImgs:
@@ -99,15 +99,21 @@ routes:
             fields:
                 - data.courseId
                 - data.name
-                - data.courseType
-                - data.status
-                - data.isSaleOnly
+                - path: data.courseType
+                  description: "课程类型, 0-视频 1-音频 2-图文"
+                - path: data.status
+                  description: "上架状态, 1-已上架 2-已下架"
+                - path: data.isSaleOnly
+                  description: "是否单独售卖, 1-是 0-否"
                 - data.price
-                - data.payType
+                - path: data.payType
+                  description: "售卖类型, 1-免费 2-付费 3-加密"
                 - data.courseAvatar
                 - data.detailInfo
-                - data.playMode
-                - data.articleType
+                - path: data.playMode
+                  description: "播放模式, 1-横屏 2-竖屏（仅视频课程）"
+                - path: data.articleType
+                  description: "图文模式, 1-图文 2-文章 3-多图（仅图文课程）"
                 - data.articleImgs
                 - data.delayTime
                 - data.createdAt
@@ -144,15 +150,27 @@ routes:
         response:
             fields:
                 - list.data.courseId
-                - list.data.name
-                - list.data.courseType
-                - list.data.status
-                - list.data.isSaleOnly
+                - path: list.data.name
+                  description: 课程名称
+                - path: list.data.courseType
+                  description: "课程类型, 0-视频 1-音频 2-图文"
+                - path: list.data.status
+                  description: "上架状态, 1-已上架 2-已下架"
+                - path: list.data.isSaleOnly
+                  description: "是否单独售卖, 1-是 0-否"
                 - list.data.price
-                - list.data.payType
+                - path: list.data.payType
+                  description: "售卖类型, 1-免费 2-付费 3-加密"
                 - list.data.courseAvatar
+                - list.data.createdAt
+                - path: list.data.contentAuditStatus
+                  description: 内容审核状态
+                - list.data.adminUser
+                - list.from
+                - list.to
                 - list.total
                 - list.current_page
+                - list.last_page
                 - list.per_page
     update:
         method: PUT
