@@ -1,5 +1,5 @@
 name: course
-description: 课程管理，包括视频/音频/图文
+description: 课程管理，包括视频/音频/图文等课程
 routes:
     create:
         method: POST
@@ -16,6 +16,24 @@ routes:
                 description: 课程类型, 0-视频课程, 1-音频课程, 2-图文课程
                 required: true
                 type: int
+            playMode:
+                description: 视频播放模式, 1-横屏播放(推荐) 2-竖屏播放。仅用于视频课程
+                required: false
+                type: int
+            articleType:
+                description: |
+                    图文模式选择，仅用于图文课程
+                        - type=1(图文模式, 推荐): 基础图片文本结合模式，简洁明了，适用于课程引流
+                        - type=2(文章模式): 适合擅长文字写作的商家，做付费文章，文字分享
+                        - type=3(多图模式): 适合擅长用图片讲解具体步骤的商家，图片为主、文字为辅，适用于技术教程、辅助教学
+                required: false
+                type: int
+            articleImgs:
+                description: 主图, 最多可添加10张。当使用图文课程的多图模式时, 必须设置
+                required: false
+                type: array
+                example: |
+                    [{"imgUrl": "https://example.com/image.jpg"}]
             detailInfo:
                 description: |
                     课程详情, 支持图文混合排版。推荐使用富文本(type=1)实现完整排版效果。
@@ -39,18 +57,26 @@ routes:
                 minLength: 1
                 maxLength: 50
             payType:
-                description: 售卖类型, 1-免费, 2-付费
+                description: 售卖类型, 1-免费, 2-付费, 3-加密
                 required: true
                 type: int
+            encrypt:
+                description: 加密密码, payType = 3 时需要设置
+                required: false
+                type: string
             price:
-                description: 课程价格
+                description: 课程价格, payType = 1 时价格为 0, payType = 2 时需要大于 0
                 required: true
                 type: float
             status:
-                description: 上下架状态, 1-上架, 2-下架
+                description: 上下架状态, 1-上架, 2-下架, 3-定时上架
                 required: true
                 default: 1
                 type: int
+            delayTime:
+                description: 定时上架时间，需大于当前时间
+                required: false
+                type: date
     delete:
         method: DELETE
         path: /admin/courses/{courseId}
@@ -71,13 +97,21 @@ routes:
                 type: path
         response:
             fields:
-                - courseId
-                - name
-                - courseType
-                - status
-                - price
-                - payType
-                - courseAvatar
+                - data.courseId
+                - data.name
+                - data.courseType
+                - data.status
+                - data.isSaleOnly
+                - data.price
+                - data.payType
+                - data.courseAvatar
+                - data.detailInfo
+                - data.playMode
+                - data.articleType
+                - data.articleImgs
+                - data.delayTime
+                - data.createdAt
+                - data.updatedAt
     list:
         method: GET
         path: /admin/courses
@@ -107,6 +141,19 @@ routes:
                 required: false
                 default: 1
                 type: int
+        response:
+            fields:
+                - list.data.courseId
+                - list.data.name
+                - list.data.courseType
+                - list.data.status
+                - list.data.isSaleOnly
+                - list.data.price
+                - list.data.payType
+                - list.data.courseAvatar
+                - list.total
+                - list.current_page
+                - list.per_page
     update:
         method: PUT
         path: /admin/courses/{courseId}
@@ -126,6 +173,25 @@ routes:
                 description: 课程类型, 0-视频课程, 1-音频课程, 2-图文课程
                 required: true
                 type: int
+            playMode:
+                description: 视频播放模式, 1-横屏播放 2-竖屏播放。仅用于视频课程
+                required: false
+                type: int
+                default: 1
+            articleType:
+                description: |
+                    图文模式选择，仅用于图文课程
+                        - type=1(图文模式, 推荐): 基础图片文本结合模式，简洁明了，适用于课程引流
+                        - type=2(文章模式): 适合擅长文字写作的商家，做付费文章，文字分享
+                        - type=3(多图模式): 适合擅长用图片讲解具体步骤的商家，图片为主、文字为辅，适用于技术教程、辅助教学
+                required: false
+                type: int
+            articleImgs:
+                description: 主图, 最多可添加10张。当使用图文课程的多图模式时, 必须设置
+                required: false
+                type: array
+                example: |
+                    [{"imgUrl": "https://example.com/image.jpg"}]
             detailInfo:
                 description: |
                     课程详情, 支持图文混合排版。推荐使用富文本(type=1)实现完整排版效果。
@@ -149,15 +215,23 @@ routes:
                 minLength: 1
                 maxLength: 50
             payType:
-                description: 售卖类型, 1-免费, 2-付费
+                description: 售卖类型, 1-免费, 2-付费, 3-加密
                 required: true
                 type: int
+            encrypt:
+                description: 加密密码, payType = 3 时需要设置
+                required: false
+                type: string
             price:
-                description: 课程价格
+                description: 课程价格, payType = 1 时价格为 0, payType = 2 时需要大于 0
                 required: true
                 type: float
             status:
-                description: 上下架状态, 1-上架, 2-下架
+                description: 上下架状态, 1-上架, 2-下架, 3-定时上架
                 required: true
                 default: 1
                 type: int
+            delayTime:
+                description: 定时上架时间，需大于当前时间
+                required: false
+                type: date
