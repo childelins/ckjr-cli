@@ -6,22 +6,16 @@ routes:
         path: /admin/courses
         description: 创建课程
         template:
-            courseType:
-                description: 课程类型, 0-视频课程, 1-音频课程, 2-图文课程
-                required: true
-                type: int
-            name:
-                description: 课程名称
-                required: true
-                type: string
-                minLength: 1
-                maxLength: 50
             courseAvatar:
                 description: 课程封面
                 required: true
                 type: string
                 minLength: 1
                 maxLength: 255
+            courseType:
+                description: 课程类型, 0-视频课程, 1-音频课程, 2-图文课程
+                required: true
+                type: int
             detailInfo:
                 description: |
                     课程详情, 支持图文混合排版。推荐使用富文本(type=1)实现完整排版效果。
@@ -36,8 +30,14 @@ routes:
             isSaleOnly:
                 description: 是否单独售卖, 1-是 0-否
                 required: true
-                type: int
                 default: 1
+                type: int
+            name:
+                description: 课程名称
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 50
             payType:
                 description: 售卖类型, 1-免费, 2-付费
                 required: true
@@ -49,8 +49,35 @@ routes:
             status:
                 description: 上下架状态, 1-上架, 2-下架
                 required: true
-                type: int
                 default: 1
+                type: int
+    delete:
+        method: DELETE
+        path: /admin/courses/{courseId}
+        description: 删除课程
+        template:
+            courseId:
+                description: 课程ID
+                required: true
+                type: path
+    get:
+        method: GET
+        path: /admin/courses/{courseId}/edit
+        description: 获取课程详情
+        template:
+            courseId:
+                description: 课程ID
+                required: true
+                type: path
+        response:
+            fields:
+                - courseId
+                - name
+                - courseType
+                - status
+                - price
+                - payType
+                - courseAvatar
     list:
         method: GET
         path: /admin/courses
@@ -85,6 +112,12 @@ routes:
         path: /admin/courses/{courseId}
         description: 更新课程
         template:
+            courseAvatar:
+                description: 课程封面
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 255
             courseId:
                 description: 课程ID
                 required: true
@@ -93,18 +126,6 @@ routes:
                 description: 课程类型, 0-视频课程, 1-音频课程, 2-图文课程
                 required: true
                 type: int
-            name:
-                description: 课程名称
-                required: true
-                type: string
-                minLength: 1
-                maxLength: 50
-            courseAvatar:
-                description: 课程封面
-                required: true
-                type: string
-                minLength: 1
-                maxLength: 255
             detailInfo:
                 description: |
                     课程详情, 支持图文混合排版。推荐使用富文本(type=1)实现完整排版效果。
@@ -119,8 +140,14 @@ routes:
             isSaleOnly:
                 description: 是否单独售卖, 1-是 0-否
                 required: true
-                type: int
                 default: 1
+                type: int
+            name:
+                description: 课程名称
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 50
             payType:
                 description: 售卖类型, 1-免费, 2-付费
                 required: true
@@ -132,5 +159,5 @@ routes:
             status:
                 description: 上下架状态, 1-上架, 2-下架
                 required: true
-                type: int
                 default: 1
+                type: int
