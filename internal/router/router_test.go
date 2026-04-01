@@ -2,6 +2,8 @@ package router
 
 import (
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestParseRouteConfig(t *testing.T) {
@@ -212,5 +214,66 @@ func TestGetTemplate(t *testing.T) {
 	}
 	if tmpl["page"].Default == nil {
 		t.Error("page should have default")
+	}
+}
+
+func TestRoute_ResponseFilter_Unmarshal(t *testing.T) {
+	yamlData := `
+method: GET
+path: /admin/courses/{courseId}/edit
+description: 获取课程详情
+response:
+  fields:
+    - courseId
+    - name
+    - status
+`
+	var route Route
+	if err := yaml.Unmarshal([]byte(yamlData), &route); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if route.Response == nil {
+		t.Fatal("Response should not be nil")
+	}
+	if len(route.Response.Fields) != 3 {
+		t.Errorf("Fields count = %d, want 3", len(route.Response.Fields))
+	}
+	if len(route.Response.Exclude) != 0 {
+		t.Errorf("Exclude count = %d, want 0", len(route.Response.Exclude))
+	}
+}
+
+func TestRoute_ResponseFilter_Exclude(t *testing.T) {
+	yamlData := `
+method: GET
+path: /admin/courses
+response:
+  exclude:
+    - detailInfo
+    - internalFlag
+`
+	var route Route
+	if err := yaml.Unmarshal([]byte(yamlData), &route); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(route.Response.Exclude) != 2 {
+		t.Errorf("Exclude count = %d, want 2", len(route.Response.Exclude))
+	}
+}
+
+func TestRoute_ResponseFilter_Nil(t *testing.T) {
+	yamlData := `
+method: GET
+path: /admin/courses
+`
+	var route Route
+	if err := yaml.Unmarshal([]byte(yamlData), &route); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if route.Response != nil {
+		t.Error("Response should be nil when not configured")
 	}
 }

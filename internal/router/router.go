@@ -24,12 +24,19 @@ type Field struct {
 	Pattern   string `yaml:"pattern,omitempty"`
 }
 
+// ResponseFilter 定义响应字段过滤规则
+type ResponseFilter struct {
+	Fields  []string `yaml:"fields,omitempty"`
+	Exclude []string `yaml:"exclude,omitempty"`
+}
+
 // Route 定义单个路由
 type Route struct {
 	Method      string           `yaml:"method"`
 	Path        string           `yaml:"path"`
 	Description string           `yaml:"description"`
 	Template    map[string]Field `yaml:"template"`
+	Response    *ResponseFilter  `yaml:"response,omitempty"`
 }
 
 // RouteConfig 路由配置
