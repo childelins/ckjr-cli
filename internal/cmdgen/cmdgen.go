@@ -121,6 +121,9 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 				os.Exit(1)
 			}
 
+			// 响应字段过滤
+			result = FilterResponse(result, route.Response)
+
 			output.Print(os.Stdout, result, pretty)
 		},
 	}
@@ -149,6 +152,9 @@ func printTemplateTo(w io.Writer, template map[string]router.Field) {
 			t = "string"
 		}
 		entry["type"] = t
+		if t == "path" {
+			entry["note"] = "路径参数，必须包含在 JSON 中，将自动替换 URL 中的占位符"
+		}
 		if field.Example != "" {
 			entry["example"] = field.Example
 		}
@@ -245,7 +251,7 @@ func handleAPIErrorTo(w io.Writer, err error, verbose bool) {
 			"msg":        apiErr.Message,
 			"statusCode": apiErr.ServerCode,
 		}
-		if len(apiErr.Errors) > 0 {
+		if apiErr.Errors != nil {
 			resp["errors"] = apiErr.Errors
 		}
 		output.Print(w, resp, false)

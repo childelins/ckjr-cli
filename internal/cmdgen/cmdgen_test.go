@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -341,6 +342,46 @@ func TestPrintTemplate_Constraints(t *testing.T) {
 	}
 }
 
+func TestPrintTemplate_PathFieldNote(t *testing.T) {
+	template := map[string]router.Field{
+		"courseId": {
+			Description: "课程ID",
+			Required:    true,
+			Type:        "path",
+		},
+		"name": {
+			Description: "课程名称",
+			Required:    true,
+			Type:        "string",
+		},
+	}
+
+	var buf bytes.Buffer
+	printTemplateTo(&buf, template)
+
+	var result map[string]map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v", err)
+	}
+
+	// path 类型字段应有 note
+	courseEntry := result["courseId"]
+	note, ok := courseEntry["note"]
+	if !ok {
+		t.Fatal("courseId (type=path) should have note field")
+	}
+	wantNote := "路径参数，必须包含在 JSON 中，将自动替换 URL 中的占位符"
+	if note != wantNote {
+		t.Errorf("note = %q, want %q", note, wantNote)
+	}
+
+	// 非 path 类型字段不应有 note
+	nameEntry := result["name"]
+	if _, exists := nameEntry["note"]; exists {
+		t.Error("name (type=string) should not have note field")
+	}
+}
+
 func TestHandleAPIErrorTo_Unauthorized_StructuredJSON(t *testing.T) {
 	var buf bytes.Buffer
 	handleAPIErrorTo(&buf, api.ErrUnauthorized, false)
@@ -490,6 +531,214 @@ func TestHandleAPIErrorTo_GenericError_FlatJSON(t *testing.T) {
 	}
 	if result["error"] != "网络连接超时" {
 		t.Errorf("error = %v, want 网络连接超时", result["error"])
+	}
+}
+
+func TestBuildSubCommand_ResponseFilter(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := api.Response{
+			Data: map[string]interface{}{
+				"courseId":     float64(1),
+				"name":         "Go",
+				"status":       float64(1),
+				"detailInfo":   "sensitive data",
+				"internalFlag": true,
+			},
+			Message:    "ok",
+			StatusCode: 200,
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	cfg := &router.RouteConfig{
+		Name: "course",
+		Routes: map[string]router.Route{
+			"get": {
+				Method:      "GET",
+				Path:        "/admin/courses/{courseId}/edit",
+				Description: "获取课程详情",
+				Template: map[string]router.Field{
+					"courseId": {Type: "path", Required: true},
+				},
+				Response: &router.ResponseFilter{
+					Fields: []string{"courseId", "name", "status"},
+				},
+			},
+		},
+	}
+
+	clientFactory := func() (*api.Client, error) {
+		return api.NewClient(server.URL, "test-key"), nil
+	}
+
+	// 捕获 stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd := BuildCommand(cfg, clientFactory)
+	cmd.PersistentFlags().Bool("pretty", false, "")
+	cmd.PersistentFlags().Bool("verbose", false, "")
+
+	cmd.SetArgs([]string{"get", `{"courseId": 1}`})
+	cmd.Execute()
+
+	w.Close()
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	os.Stdout = oldStdout
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v, output: %s", err, buf.String())
+	}
+
+	// 验证仅输出 fields 中指定的字段
+	if _, ok := result["detailInfo"]; ok {
+		t.Error("detailInfo should be filtered out")
+	}
+	if _, ok := result["internalFlag"]; ok {
+		t.Error("internalFlag should be filtered out")
+	}
+	if _, ok := result["courseId"]; !ok {
+		t.Error("courseId should be present")
+	}
+	if _, ok := result["name"]; !ok {
+		t.Error("name should be present")
+	}
+	if _, ok := result["status"]; !ok {
+		t.Error("status should be present")
+	}
+}
+
+func TestBuildSubCommand_ResponseFilter_Exclude(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := api.Response{
+			Data: map[string]interface{}{
+				"courseId":     float64(1),
+				"name":         "Go",
+				"detailInfo":   "sensitive",
+				"internalFlag": true,
+			},
+			Message:    "ok",
+			StatusCode: 200,
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	cfg := &router.RouteConfig{
+		Name: "course",
+		Routes: map[string]router.Route{
+			"list": {
+				Method:      "GET",
+				Path:        "/admin/courses",
+				Description: "课程列表",
+				Response: &router.ResponseFilter{
+					Exclude: []string{"detailInfo", "internalFlag"},
+				},
+			},
+		},
+	}
+
+	clientFactory := func() (*api.Client, error) {
+		return api.NewClient(server.URL, "test-key"), nil
+	}
+
+	// 捕获 stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd := BuildCommand(cfg, clientFactory)
+	cmd.PersistentFlags().Bool("pretty", false, "")
+	cmd.PersistentFlags().Bool("verbose", false, "")
+
+	cmd.SetArgs([]string{"list", "{}"})
+	cmd.Execute()
+
+	w.Close()
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	os.Stdout = oldStdout
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v, output: %s", err, buf.String())
+	}
+
+	if _, ok := result["detailInfo"]; ok {
+		t.Error("detailInfo should be excluded")
+	}
+	if _, ok := result["internalFlag"]; ok {
+		t.Error("internalFlag should be excluded")
+	}
+	if _, ok := result["courseId"]; !ok {
+		t.Error("courseId should be present")
+	}
+}
+
+func TestBuildSubCommand_NoResponseFilter(t *testing.T) {
+	// 无 response 配置时行为不变
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := api.Response{
+			Data: map[string]interface{}{
+				"a": float64(1),
+				"b": float64(2),
+			},
+			Message:    "ok",
+			StatusCode: 200,
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	cfg := &router.RouteConfig{
+		Name: "test",
+		Routes: map[string]router.Route{
+			"get": {
+				Method:      "GET",
+				Path:        "/test",
+				Description: "test",
+			},
+		},
+	}
+
+	clientFactory := func() (*api.Client, error) {
+		return api.NewClient(server.URL, "test-key"), nil
+	}
+
+	// 捕获 stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd := BuildCommand(cfg, clientFactory)
+	cmd.PersistentFlags().Bool("pretty", false, "")
+	cmd.PersistentFlags().Bool("verbose", false, "")
+
+	cmd.SetArgs([]string{"get", "{}"})
+	cmd.Execute()
+
+	w.Close()
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	os.Stdout = oldStdout
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v, output: %s", err, buf.String())
+	}
+
+	if _, ok := result["a"]; !ok {
+		t.Error("a should be present (no filter)")
+	}
+	if _, ok := result["b"]; !ok {
+		t.Error("b should be present (no filter)")
 	}
 }
 
