@@ -20,3 +20,9 @@ routes:
                 type: string
                 required: true
                 example: ai_service
+        response:
+            - path: url
+              description: 访问链接
+            - path: img
+              description: 二维码
+

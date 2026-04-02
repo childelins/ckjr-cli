@@ -77,6 +77,9 @@ routes:
                 description: 定时上架时间，需大于当前时间
                 required: false
                 type: date
+        response:
+            - path: courseId
+              description: 课程ID
     delete:
         method: DELETE
         path: /admin/courses/{courseId}
@@ -96,28 +99,27 @@ routes:
                 required: true
                 type: path
         response:
-            fields:
-                - data.courseId
-                - data.name
-                - path: data.courseType
-                  description: "课程类型, 0-视频 1-音频 2-图文"
-                - path: data.status
-                  description: "上架状态, 1-已上架 2-已下架 3-定时上架"
-                - path: data.isSaleOnly
-                  description: "是否单独售卖, 1-是 0-否"
-                - data.price
-                - path: data.payType
-                  description: "售卖类型, 1-免费 2-付费 3-加密"
-                - data.courseAvatar
-                - data.detailInfo
-                - path: data.playMode
-                  description: "播放模式, 1-横屏 2-竖屏（仅视频课程）"
-                - path: data.articleType
-                  description: "图文模式, 1-图文 2-文章 3-多图（仅图文课程）"
-                - data.articleImgs
-                - data.delayTime
-                - data.createdAt
-                - data.updatedAt
+            - data.courseId
+            - data.name
+            - path: data.courseType
+              description: "课程类型, 0-视频 1-音频 2-图文"
+            - path: data.status
+              description: "上架状态, 1-已上架 2-已下架 3-定时上架"
+            - path: data.isSaleOnly
+              description: "是否单独售卖, 1-是 0-否"
+            - data.price
+            - path: data.payType
+              description: "售卖类型, 1-免费 2-付费 3-加密"
+            - data.courseAvatar
+            - data.detailInfo
+            - path: data.playMode
+              description: "播放模式, 1-横屏 2-竖屏（仅视频课程）"
+            - path: data.articleType
+              description: "图文模式, 1-图文 2-文章 3-多图（仅图文课程）"
+            - data.articleImgs
+            - data.delayTime
+            - data.createdAt
+            - data.updatedAt
     list:
         method: GET
         path: /admin/courses
@@ -153,31 +155,34 @@ routes:
                 default: 1
                 type: int
         response:
-            fields:
-                - list.data.courseId
-                - path: list.data.name
-                  description: 课程名称
-                - path: list.data.courseType
-                  description: "课程类型, 0-视频 1-音频 2-图文"
-                - path: list.data.status
-                  description: "上架状态, 1-已上架 2-已下架 3-定时上架"
-                - path: list.data.isSaleOnly
-                  description: "是否单独售卖, 1-是 0-否"
-                - list.data.price
-                - path: list.data.payType
-                  description: "售卖类型, 1-免费 2-付费 3-加密"
-                - list.data.courseAvatar
-                - list.data.createdAt
-                - path: list.data.contentAuditStatus
-                  description: 内容审核状态, -1 审核失败, 1 审核通过, 0 审核中
-                - path: list.data.adminUser
-                  description: 创建者
-                - list.from
-                - list.to
-                - list.total
-                - list.current_page
-                - list.last_page
-                - list.per_page
+            - path: list.data.courseId
+              description: 课程ID
+            - path: list.data.name
+              description: 课程名称
+            - path: list.data.courseType
+              description: "课程类型, 0-视频 1-音频 2-图文"
+            - path: list.data.status
+              description: "上架状态, 1-已上架 2-已下架 3-定时上架"
+            - path: list.data.isSaleOnly
+              description: "是否单独售卖, 1-是 0-否"
+            - path: list.data.price
+              description: 课程价格
+            - path: list.data.payType
+              description: "售卖类型, 1-免费 2-付费 3-加密"
+            - path: list.data.courseAvatar
+              description: 课程封面
+            - path: list.data.createdAt
+              description: 创建时间
+            - path: list.data.contentAuditStatus
+              description: 内容审核状态, -1 审核失败, 1 审核通过, 0 审核中
+            - path: list.data.adminUser
+              description: 创建者
+            - list.from
+            - list.to
+            - list.total
+            - list.current_page
+            - list.last_page
+            - list.per_page
     update:
         method: PUT
         path: /admin/courses/{courseId}
@@ -259,3 +264,6 @@ routes:
                 description: 定时上架时间，需大于当前时间
                 required: false
                 type: date
+        response:
+            - path: courseId
+              description: 课程ID

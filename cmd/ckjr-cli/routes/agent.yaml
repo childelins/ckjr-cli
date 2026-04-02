@@ -40,6 +40,9 @@ routes:
                 required: false
                 default: 3
                 type: int
+        response:
+            - path: aikbId
+              description: 智能体ID
     delete:
         method: POST
         path: /admin/aiCreationCenter/deleteApp
@@ -58,6 +61,26 @@ routes:
                 description: 智能体ID
                 required: true
                 type: int
+        response:
+            - path: aikbId
+              description: 智能体ID
+            - path: name
+              description: 智能体名称
+            - path: avatar
+              description: 智能体头像URL
+            - path: desc
+              description: 智能体描述
+            - path: botType
+              description: 智能体类型, 99-自营智能体, 100-扣子智能体
+            - path: greeting
+              description: 开场白文案
+            - path: instructions
+              description: 智能体提示词
+            - path: price
+              description: 价格
+            - path: status
+              description: 状态, 1-正常 3-下架
+
     list:
         method: POST
         path: /admin/aiCreationCenter/listApp
@@ -126,3 +149,6 @@ routes:
                 type: string
                 minLength: 1
                 maxLength: 20
+        response:
+            - path: aikbId
+              description: 智能体ID
