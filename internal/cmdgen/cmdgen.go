@@ -97,7 +97,7 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 				os.Exit(1)
 			}
 
-			// 执行 API 请求
+			// 创建 API 客户端
 			if clientFactory == nil {
 				output.PrintError(os.Stderr, "API 客户端未配置")
 				os.Exit(1)
@@ -109,13 +109,19 @@ func buildSubCommand(resource, name string, route router.Route, clientFactory AP
 				os.Exit(1)
 			}
 
-			pretty, _ := cmd.Flags().GetBool("pretty")
-			verbose, _ := cmd.Flags().GetBool("verbose")
-
 			// 生成 requestId 并构建 context
 			ctx := context.Background()
 			requestID := logging.NewRequestID()
 			ctx = logging.WithRequestID(ctx, requestID)
+
+			// 自动转存外部图片 URL
+			if err := processAutoUpload(ctx, input, route.Template, client); err != nil {
+				output.PrintError(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+
+			pretty, _ := cmd.Flags().GetBool("pretty")
+			verbose, _ := cmd.Flags().GetBool("verbose")
 
 			var result interface{}
 			if err := client.DoCtx(ctx, route.Method, resolvedPath, input, &result); err != nil {

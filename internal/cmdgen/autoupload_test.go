@@ -1,10 +1,12 @@
 package cmdgen
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/childelins/ckjr-cli/internal/api"
@@ -245,4 +247,116 @@ func stringContains(s, sub string) bool {
 		}
 	}
 	return false
+}
+
+func TestBuildSubCommand_AutoUpload(t *testing.T) {
+	// 外部图片服务器
+	imageServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Write([]byte("fake-image-data"))
+	}))
+	defer imageServer.Close()
+
+	// 模拟 OSS 服务器
+	ossServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ossServer.Close()
+
+	var capturedAvatar string
+	// API 服务器
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/admin/assets/imageSign":
+			json.NewEncoder(w).Encode(api.Response{
+				Data: map[string]interface{}{
+					"accessid":  "test-id",
+					"policy":    "test-policy",
+					"signature": "test-sig",
+					"callback":  "",
+					"dir":       "test/dir/",
+					"host":      ossServer.URL,
+					"origin":    1,
+				},
+				Message:    "ok",
+				StatusCode: 200,
+			})
+		case "/admin/assets/addImgInAsset":
+			json.NewEncoder(w).Encode(api.Response{
+				Data:       map[string]interface{}{"id": 123},
+				Message:    "ok",
+				StatusCode: 200,
+			})
+		case "/admin/create":
+			// 捕获最终请求中的 avatar 值
+			var body map[string]interface{}
+			json.NewDecoder(r.Body).Decode(&body)
+			capturedAvatar = body["avatar"].(string)
+			resp := api.Response{Data: map[string]interface{}{"id": float64(1)}, Message: "ok", StatusCode: 200}
+			json.NewEncoder(w).Encode(resp)
+		default:
+			json.NewEncoder(w).Encode(api.Response{
+				Data:       map[string]interface{}{"statusCode": 200},
+				Message:    "ok",
+				StatusCode: 200,
+			})
+		}
+	}))
+	defer apiServer.Close()
+
+	cfg := &router.RouteConfig{
+		Name: "agent",
+		Routes: map[string]router.Route{
+			"create": {
+				Method:      "POST",
+				Path:        "/admin/create",
+				Description: "创建",
+				Template: map[string]router.Field{
+					"avatar": {
+						Description: "头像URL",
+						Required:    true,
+						AutoUpload:  "image",
+					},
+					"name": {
+						Description: "名称",
+						Required:    true,
+					},
+				},
+				Response: &router.ResponseFilter{
+					Fields: []router.ResponseField{{Path: "id"}},
+				},
+			},
+		},
+	}
+
+	clientFactory := func() (*api.Client, error) {
+		return api.NewClient(apiServer.URL, "test-key"), nil
+	}
+
+	// 捕获 stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd := BuildCommand(cfg, clientFactory)
+	cmd.PersistentFlags().Bool("pretty", false, "")
+	cmd.PersistentFlags().Bool("verbose", false, "")
+
+	externalURL := imageServer.URL + "/test.png"
+	cmd.SetArgs([]string{"create", `{"avatar": "` + externalURL + `", "name": "test"}`})
+	cmd.Execute()
+
+	w.Close()
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	os.Stdout = oldStdout
+
+	// 验证最终请求中 avatar 已被替换为 OSS URL
+	if capturedAvatar == externalURL {
+		t.Errorf("avatar should be replaced, still external URL: %s", capturedAvatar)
+	}
+	if capturedAvatar == "" {
+		t.Error("avatar should not be empty")
+	}
 }
