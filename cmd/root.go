@@ -103,6 +103,11 @@ func registerRouteCommands() {
 		}
 		cmd := cmdgen.BuildCommand(cfg, createClient)
 		rootCmd.AddCommand(cmd)
+
+		// 为 asset 命令额外注册 upload-image 子命令
+		if cfg.Name == "asset" {
+			cmd.AddCommand(newUploadImageCmd(createClient))
+		}
 	}
 }
 
