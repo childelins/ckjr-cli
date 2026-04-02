@@ -74,3 +74,48 @@ func TestMaskedAPIKey(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultBaseURL_Development(t *testing.T) {
+	SetEnvironment("development")
+	got := DefaultBaseURL()
+	want := "https://kpapi-cs.ckjr001.com/api"
+	if got != want {
+		t.Errorf("DefaultBaseURL() = %s, want %s", got, want)
+	}
+}
+
+func TestDefaultBaseURL_Production(t *testing.T) {
+	SetEnvironment("production")
+	got := DefaultBaseURL()
+	want := "https://kpapi0.kw.ckjr.cn/api"
+	if got != want {
+		t.Errorf("DefaultBaseURL() = %s, want %s", got, want)
+	}
+}
+
+func TestDefaultBaseURL_UnknownFallback(t *testing.T) {
+	SetEnvironment("unknown")
+	got := DefaultBaseURL()
+	want := "https://kpapi-cs.ckjr001.com/api"
+	if got != want {
+		t.Errorf("DefaultBaseURL() = %s, want %s", got, want)
+	}
+}
+
+func TestResolveBaseURL_WithBaseURL(t *testing.T) {
+	cfg := &Config{BaseURL: "https://custom.example.com/api"}
+	got := cfg.ResolveBaseURL()
+	if got != cfg.BaseURL {
+		t.Errorf("ResolveBaseURL() = %s, want %s", got, cfg.BaseURL)
+	}
+}
+
+func TestResolveBaseURL_EmptyBaseURL(t *testing.T) {
+	SetEnvironment("production")
+	cfg := &Config{BaseURL: ""}
+	got := cfg.ResolveBaseURL()
+	want := "https://kpapi0.kw.ckjr.cn/api"
+	if got != want {
+		t.Errorf("ResolveBaseURL() = %s, want %s", got, want)
+	}
+}

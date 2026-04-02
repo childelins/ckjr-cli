@@ -22,6 +22,37 @@ func init() {
 	ConfigPath = filepath.Join(home, ".ckjr", "config.json")
 }
 
+// envBaseURLs 各环境对应的默认 base_url
+var envBaseURLs = map[string]string{
+	"development": "https://kpapi-cs.ckjr001.com/api",
+	"production":  "https://kpapi0.kw.ckjr.cn/api",
+}
+
+// environment 由 main 包通过 SetEnvironment 注入
+var environment string
+
+// SetEnvironment 注入编译时的 Environment 值
+func SetEnvironment(env string) {
+	environment = env
+}
+
+// DefaultBaseURL 根据当前 environment 返回对应的默认 base_url
+func DefaultBaseURL() string {
+	if u, ok := envBaseURLs[environment]; ok {
+		return u
+	}
+	return envBaseURLs["development"]
+}
+
+// ResolveBaseURL 返回最终使用的 base_url
+// 优先级: config.json 中的 base_url > DefaultBaseURL()
+func (c *Config) ResolveBaseURL() string {
+	if c.BaseURL != "" {
+		return c.BaseURL
+	}
+	return DefaultBaseURL()
+}
+
 // ErrConfigNotFound 配置文件不存在
 var ErrConfigNotFound = errors.New("配置文件不存在")
 
