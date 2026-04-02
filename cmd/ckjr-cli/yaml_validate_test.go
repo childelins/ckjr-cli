@@ -170,6 +170,11 @@ func validateWorkflowConfig(t *testing.T, filename string, cfg *workflow.Config)
 func validateWorkflowCommandRefs(t *testing.T, wfFiles map[string][]byte, routeConfigs map[string]*router.RouteConfig) {
 	t.Helper()
 
+	// 手动注册的子命令（不在路由 YAML 中，由代码动态注册）
+	manualCommands := map[string]bool{
+		"asset upload-image": true,
+	}
+
 	// Build a lookup map: routeConfigName -> RouteConfig
 	for wfFile, wfData := range wfFiles {
 		wfCfg, err := workflow.Parse(wfData)
@@ -191,6 +196,11 @@ func validateWorkflowCommandRefs(t *testing.T, wfFiles map[string][]byte, routeC
 
 				routeName := parts[0]
 				actionName := parts[1]
+
+				// 跳过手动注册的命令验证
+				if manualCommands[step.Command] {
+					continue
+				}
 
 				routeCfg, ok := routeConfigs[routeName]
 				if !ok {
@@ -283,6 +293,11 @@ func TestWorkflowCommandReferences(t *testing.T) {
 		t.Fatal("no workflow YAML files found")
 	}
 
+	// 手动注册的子命令（不在路由 YAML 中，由代码动态注册）
+	manualCommands := map[string]bool{
+		"asset upload-image": true,
+	}
+
 	// Parse all route configs, indexed by config name
 	routeConfigs := make(map[string]*router.RouteConfig)
 	for filename, data := range routeFiles {
@@ -304,6 +319,11 @@ func TestWorkflowCommandReferences(t *testing.T) {
 			for i, step := range wf.Steps {
 				testName := fmt.Sprintf("%s/%s/step[%d]_%s", wfFile, wfName, i, step.ID)
 				t.Run(testName, func(t *testing.T) {
+					// 跳过手动注册的命令验证
+					if manualCommands[step.Command] {
+						return
+					}
+
 					parts := strings.Fields(step.Command)
 					if len(parts) != 2 {
 						t.Errorf("command %q should have exactly 2 parts, got %d", step.Command, len(parts))

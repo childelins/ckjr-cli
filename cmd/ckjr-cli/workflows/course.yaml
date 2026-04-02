@@ -10,6 +10,7 @@ workflows:
     allowed-routes:
       - course
       - common
+      - asset
     inputs:
       - name: name
         description: 课程名称
@@ -32,12 +33,19 @@ workflows:
         required: false
         hint: 默认横屏(1)
     steps:
+      - id: upload-avatar
+        description: 如果课程封面是外部图片URL，先转存到系统素材库
+        command: asset upload-image
+        params:
+          url: "{{inputs.courseAvatar}}"
+        output:
+          imageUrl: "response.imageUrl"
       - id: create
         description: 创建视频课程
         command: course create
         params:
           name: "{{inputs.name}}"
-          courseAvatar: "{{inputs.courseAvatar}}"
+          courseAvatar: "{{steps.upload-avatar.imageUrl}}"
           detailInfo: "{{inputs.detailInfo}}"
           payType: "{{inputs.payType}}"
           price: "{{inputs.price}}"
@@ -71,6 +79,7 @@ workflows:
     allowed-routes:
       - course
       - common
+      - asset
     inputs:
       - name: name
         description: 课程名称
@@ -89,12 +98,19 @@ workflows:
         description: 价格
         required: true
     steps:
+      - id: upload-avatar
+        description: 如果课程封面是外部图片URL，先转存到系统素材库
+        command: asset upload-image
+        params:
+          url: "{{inputs.courseAvatar}}"
+        output:
+          imageUrl: "response.imageUrl"
       - id: create
         description: 创建音频课程
         command: course create
         params:
           name: "{{inputs.name}}"
-          courseAvatar: "{{inputs.courseAvatar}}"
+          courseAvatar: "{{steps.upload-avatar.imageUrl}}"
           detailInfo: "{{inputs.detailInfo}}"
           payType: "{{inputs.payType}}"
           price: "{{inputs.price}}"
@@ -127,6 +143,7 @@ workflows:
     allowed-routes:
       - course
       - common
+      - asset
     inputs:
       - name: name
         description: 课程名称
@@ -149,12 +166,19 @@ workflows:
         required: false
         hint: 默认图文模式(1)
     steps:
+      - id: upload-avatar
+        description: 如果课程封面是外部图片URL，先转存到系统素材库
+        command: asset upload-image
+        params:
+          url: "{{inputs.courseAvatar}}"
+        output:
+          imageUrl: "response.imageUrl"
       - id: create
         description: 创建图文课程
         command: course create
         params:
           name: "{{inputs.name}}"
-          courseAvatar: "{{inputs.courseAvatar}}"
+          courseAvatar: "{{steps.upload-avatar.imageUrl}}"
           detailInfo: "{{inputs.detailInfo}}"
           payType: "{{inputs.payType}}"
           price: "{{inputs.price}}"
