@@ -11,7 +11,6 @@ workflows:
     allowed-routes:
       - agent
       - common
-      - asset
     inputs:
       - name: name
         description: 智能体名称
@@ -20,7 +19,7 @@ workflows:
         description: 智能体描述/用途
         required: true
       - name: avatar
-        description: 头像URL
+        description: 头像URL（外部图片将自动转存到素材库）
         required: false
         hint: 如果用户未提供，询问用户或使用用户提供的素材链接
       - name: instructions
@@ -32,20 +31,13 @@ workflows:
         required: false
         hint: 根据智能体角色生成一条友好的开场白
     steps:
-      - id: upload-avatar
-        description: 如果头像是外部图片URL，先转存到系统素材库
-        command: asset upload-image
-        params:
-          url: "{{inputs.avatar}}"
-        output:
-          imageUrl: "response.imageUrl"
       - id: create
         description: 创建智能体基本信息
         command: agent create
         params:
           name: "{{inputs.name}}"
           desc: "{{inputs.desc}}"
-          avatar: "{{steps.upload-avatar.imageUrl}}"
+          avatar: "{{inputs.avatar}}"
         output:
           aikbId: "response.aikbId"
       - id: configure
@@ -55,7 +47,7 @@ workflows:
           aikbId: "{{steps.create.aikbId}}"
           name: "{{inputs.name}}"
           desc: "{{inputs.desc}}"
-          avatar: "{{steps.upload-avatar.imageUrl}}"
+          avatar: "{{inputs.avatar}}"
           instructions: "{{inputs.instructions}}"
           greeting: "{{inputs.greeting}}"
       - id: get-link
