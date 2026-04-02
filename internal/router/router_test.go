@@ -223,7 +223,6 @@ method: GET
 path: /admin/courses/{courseId}/edit
 description: 获取课程详情
 response:
-  fields:
     - courseId
     - name
     - status
@@ -239,39 +238,16 @@ response:
 	if len(route.Response.Fields) != 3 {
 		t.Errorf("Fields count = %d, want 3", len(route.Response.Fields))
 	}
-	if len(route.Response.Exclude) != 0 {
-		t.Errorf("Exclude count = %d, want 0", len(route.Response.Exclude))
-	}
-}
-
-func TestRoute_ResponseFilter_Exclude(t *testing.T) {
-	yamlData := `
-method: GET
-path: /admin/courses
-response:
-  exclude:
-    - detailInfo
-    - internalFlag
-`
-	var route Route
-	if err := yaml.Unmarshal([]byte(yamlData), &route); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(route.Response.Exclude) != 2 {
-		t.Errorf("Exclude count = %d, want 2", len(route.Response.Exclude))
-	}
 }
 
 func TestResponseFilter_MixedFieldFormats(t *testing.T) {
 	yamlData := `
-fields:
-  - data.courseId
-  - path: data.courseType
-    description: "课程类型, 0-视频 1-音频 2-图文"
-  - path: data.status
-    description: "上架状态, 1-已上架 2-已下架"
-  - data.name
+- data.courseId
+- path: data.courseType
+  description: "课程类型, 0-视频 1-音频 2-图文"
+- path: data.status
+  description: "上架状态, 1-已上架 2-已下架"
+- data.name
 `
 	var rf ResponseFilter
 	if err := yaml.Unmarshal([]byte(yamlData), &rf); err != nil {
@@ -310,10 +286,9 @@ fields:
 
 func TestResponseFilter_BackwardCompat_PureStrings(t *testing.T) {
 	yamlData := `
-fields:
-  - courseId
-  - name
-  - status
+- courseId
+- name
+- status
 `
 	var rf ResponseFilter
 	if err := yaml.Unmarshal([]byte(yamlData), &rf); err != nil {
@@ -326,6 +301,18 @@ fields:
 	paths := rf.FieldPaths()
 	if paths[0] != "courseId" || paths[1] != "name" || paths[2] != "status" {
 		t.Errorf("FieldPaths() = %v", paths)
+	}
+}
+
+func TestResponseFilter_InvalidFormat(t *testing.T) {
+	yamlData := `
+key: value
+nested: true
+`
+	var rf ResponseFilter
+	err := yaml.Unmarshal([]byte(yamlData), &rf)
+	if err == nil {
+		t.Error("expected error for non-sequence YAML")
 	}
 }
 

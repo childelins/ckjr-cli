@@ -32,8 +32,7 @@ type ResponseField struct {
 
 // ResponseFilter 定义响应字段过滤规则
 type ResponseFilter struct {
-	Fields  []ResponseField `yaml:"-"`
-	Exclude []string        `yaml:"exclude,omitempty"`
+	Fields []ResponseField
 }
 
 // FieldPaths 返回所有字段的路径列表（供过滤逻辑使用）
@@ -47,15 +46,10 @@ func (rf *ResponseFilter) FieldPaths() []string {
 
 // UnmarshalYAML 自定义解析，支持纯字符串和 path+description 对象两种格式
 func (rf *ResponseFilter) UnmarshalYAML(value *yaml.Node) error {
-	var raw struct {
-		Fields  []yaml.Node `yaml:"fields"`
-		Exclude []string    `yaml:"exclude"`
+	if value.Kind != yaml.SequenceNode {
+		return fmt.Errorf("response should be a list, got %v", value.Kind)
 	}
-	if err := value.Decode(&raw); err != nil {
-		return err
-	}
-	rf.Exclude = raw.Exclude
-	for _, node := range raw.Fields {
+	for _, node := range value.Content {
 		switch node.Kind {
 		case yaml.ScalarNode:
 			rf.Fields = append(rf.Fields, ResponseField{Path: node.Value})
