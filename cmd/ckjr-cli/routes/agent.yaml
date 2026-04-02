@@ -16,6 +16,7 @@ routes:
                 description: 头像URL
                 required: true
                 type: string
+                autoUpload: image
                 minLength: 1
                 maxLength: 255
                 example: https://ck-bkt-knowledge-payment.oss-cn-hangzhou.aliyuncs.com/y99rjd/resource/imgs/120b2b85/admin-fe_y99rjd_material_BAwRCWsQW2tMd6nHichk.png
@@ -124,6 +125,7 @@ routes:
                 description: 智能体头像URL
                 required: true
                 type: string
+                autoUpload: image
                 minLength: 1
                 maxLength: 255
             desc:

@@ -10,6 +10,7 @@ routes:
                 description: 课程封面
                 required: true
                 type: string
+                autoUpload: image
                 minLength: 1
                 maxLength: 255
             courseType:
@@ -192,6 +193,7 @@ routes:
                 description: 课程封面
                 required: true
                 type: string
+                autoUpload: image
                 minLength: 1
                 maxLength: 255
             courseId:
