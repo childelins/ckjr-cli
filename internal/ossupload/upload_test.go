@@ -1,6 +1,13 @@
 package ossupload
 
-import "testing"
+import (
+	"bytes"
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
 
 func TestIsExternalURL(t *testing.T) {
 	tests := []struct {
@@ -22,5 +29,53 @@ func TestIsExternalURL(t *testing.T) {
 				t.Errorf("IsExternalURL(%q) = %v, want %v", tt.url, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestDownloadImage_Success(t *testing.T) {
+	pngImage := []byte{0x89, 0x50, 0x4E, 0x47} // PNG header bytes
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(pngImage)
+	}))
+	defer server.Close()
+
+	imgBytes, contentType, err := downloadImage(context.Background(), server.URL+"/test/avatar.png")
+	if err != nil {
+		t.Fatalf("downloadImage() error = %v", err)
+	}
+	if !bytes.Equal(imgBytes, pngImage) {
+		t.Errorf("downloadImage() bytes mismatch")
+	}
+	if contentType != "image/png" {
+		t.Errorf("downloadImage() contentType = %q, want image/png", contentType)
+	}
+}
+
+func TestDownloadImage_NonImageContentType(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte("<html>not an image</html>"))
+	}))
+	defer server.Close()
+
+	_, _, err := downloadImage(context.Background(), server.URL+"/test.html")
+	if err == nil {
+		t.Fatal("downloadImage() should return error for non-image content type")
+	}
+	if !strings.Contains(err.Error(), "不支持的内容类型") {
+		t.Errorf("downloadImage() error = %q, want content type error", err.Error())
+	}
+}
+
+func TestDownloadImage_HTTPError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	_, _, err := downloadImage(context.Background(), server.URL+"/missing.png")
+	if err == nil {
+		t.Fatal("downloadImage() should return error for 404")
 	}
 }
