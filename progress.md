@@ -238,3 +238,58 @@
 - 修复: cmd/config/config.go:102 将 cfg.BaseURL 替换为 cfg.ResolveBaseURL()
 - 新增 TestConfigShowEmptyBaseURL 测试: 保存空 base_url 配置，通过 cobra 执行 config show，验证输出为环境默认值
 - cmd/config 7 个测试 + internal/config 9 个测试全部通过，go build 编译通过
+
+## 2026-04-02 config init 简化
+
+### Phase 1: TDD 实现 config init 简化
+- Status: complete (a1f31e3)
+- 删除 runConfigInit 中 base_url 的 prompt 和 ReadString 逻辑
+- Config 保存时 BaseURL 留空，运行时由 ResolveBaseURL() 自动回退
+- 新增 TestConfigInitSavesEmptyBaseURL 测试: 模拟仅输入 api_key，验证 BaseURL 为空
+- cmd/config 8 个测试全部通过，go build 编译通过
+
+## 2026-04-03 路由模板自动图片转存
+
+### Task 1: Field 新增 AutoUpload 字段
+- Status: complete (9d64e6f)
+- router.go Field 结构体新增 AutoUpload string `yaml:"autoUpload,omitempty"`
+- router_test.go 新增 TestParseRouteConfig_AutoUpload 测试
+- 全部 12 个 router 测试通过，无回归
+
+### Task 2: 实现 processAutoUpload 函数
+- Status: complete (c896b88)
+- cmdgen.go 新增 processAutoUpload 函数，扫描 template 中 autoUpload=image 字段
+- 对外部 URL 调用 ossupload.Upload 转存，替换 input 中的值
+- autoupload_test.go 新增 7 个测试: ExternalURL/InternalURL/EmptyValue/MissingField/NonString/NoAutoUpload/UploadError
+- 全部 cmdgen 测试通过，无回归
+- 修正: plan 中 imageSign 响应需要 api.Response 包装（DoCtx 解析 Data 字段到 result）
+
+### Task 3: buildSubCommand 集成 processAutoUpload
+- Status: complete (4a70f31)
+- buildSubCommand 中将 client 创建和 ctx 生成提前到 processAutoUpload 调用之前
+- 执行顺序: ValidateAll -> client 创建 -> ctx 生成 -> processAutoUpload -> API 请求
+- autoupload_test.go 新增 TestBuildSubCommand_AutoUpload 集成测试
+- 全部 cmdgen 测试通过，无回归
+
+### Task 4: printTemplateTo 添加 autoUpload note
+- Status: complete (c896b88)
+- printTemplateTo 中 autoUpload=image 字段输出 note "外部图片URL将自动转存到系统素材库"
+- autoupload_test.go 新增 TestPrintTemplate_AutoUploadNote 测试
+- 全部 cmdgen 测试通过，无回归
+
+### Task 5: 路由 YAML 添加 autoUpload: image 标记
+- Status: complete (53a0353)
+- agent.yaml: create 和 update 的 avatar 字段添加 autoUpload: image
+- course.yaml: create 和 update 的 courseAvatar 字段添加 autoUpload: image
+
+### Task 6: Workflow YAML 简化 - 移除 upload-avatar 步骤
+- Status: complete (8847a03)
+- agent.yaml: 移除 upload-avatar 步骤，avatar 直接引用 {{inputs.avatar}}，移除 asset 从 allowed-routes
+- course.yaml: 3 个 workflow（video/audio/article）移除 upload-avatar 步骤，courseAvatar 直接引用 {{inputs.courseAvatar}}，移除 asset 从 allowed-routes
+
+### Task 7: 全量测试 + 清理
+- Status: complete (44caaee)
+- 修复 TestParse_AgentWorkflowFile: steps 4->3, allowed-routes 3->2
+- go test ./... 全量通过
+- go vet ./... 无警告
+- go build ./... 编译通过

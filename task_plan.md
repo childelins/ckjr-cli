@@ -1,6 +1,6 @@
 # 任务计划
 
-当前活跃任务: 无（Config Show Base URL 修复已完成）
+当前活跃任务: 无（config init 简化已完成）
 
 ---
 
@@ -121,7 +121,33 @@
 - [已完成] OSS 图片上传实现 (Task 1-8, 2026-04-02)
 - [已完成] 环境配置默认 base_url 实现 (Phase 1-2, 2026-04-02)
 - [已完成] Config Show Base URL 修复 (Phase 1-2, 2026-04-02)
+- [已完成] config init 简化 (Phase 1, 2026-04-02)
 - 完整历史详见 docs/superpowers/archive/
+
+---
+
+# config init 简化 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-04-02-config-init-simplify.md
+
+## 概述
+
+从 config init 移除 base_url 交互输入，仅保留 api_key 配置。运行时由 ResolveBaseURL() 自动回退到 DefaultBaseURL()。
+
+---
+
+## Phase 1: TDD 实现 config init 简化
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (a1f31e3)
+- **Description**: 添加 TestConfigInitSavesEmptyBaseURL 测试，删除 runConfigInit 中 base_url prompt 逻辑，验证全量测试通过
+
+---
+
+## 遇到的错误
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
 
 ---
 
@@ -188,3 +214,77 @@
 
 | 错误 | 尝试次数 | 解决方案 |
 |------|---------|---------|
+
+---
+
+# 路由模板自动图片转存 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-04-02-auto-image-rehost.md
+
+## 概述
+
+在路由 YAML 中标记 autoUpload: image 字段，cmdgen 自动转存外部图片 URL 到素材库。
+
+---
+
+## Task 1: Field 新增 AutoUpload 字段
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (9d64e6f)
+- **Description**: Field 结构体新增 AutoUpload string 字段，添加 YAML 解析测试
+
+---
+
+## Task 2: 实现 processAutoUpload 函数
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (c896b88)
+- **Description**: cmdgen.go 新增 processAutoUpload 函数，创建 autoupload_test.go 单元测试（7 个测试场景）
+
+---
+
+## Task 3: buildSubCommand 集成 processAutoUpload
+
+- **Source**: Plan -> Task 3
+- **Status**: complete (4a70f31)
+- **Description**: 在 buildSubCommand 执行管线中集成 processAutoUpload，将 client/ctx 创建提前
+
+---
+
+## Task 4: printTemplateTo 添加 autoUpload note
+
+- **Source**: Plan -> Task 4
+- **Status**: complete (c896b88)
+- **Description**: printTemplateTo 中为 autoUpload=image 字段输出 note 提示
+
+---
+
+## Task 5: 路由 YAML 添加 autoUpload: image 标记
+
+- **Source**: Plan -> Task 5
+- **Status**: complete (53a0353)
+- **Description**: agent.yaml 和 course.yaml 的 avatar/courseAvatar 字段添加 autoUpload: image
+
+---
+
+## Task 6: Workflow YAML 简化 - 移除 upload-avatar 步骤
+
+- **Source**: Plan -> Task 6
+- **Status**: complete (8847a03)
+- **Description**: agent.yaml 和 course.yaml 的 4 个 workflow 移除 upload-avatar 步骤，avatar/courseAvatar 直接引用 inputs，移除 asset 从 allowed-routes
+
+---
+
+## Task 7: 全量测试 + 清理
+
+- **Source**: Plan -> Task 7
+- **Status**: complete (44caaee)
+- **Description**: 更新 workflow_test.go（Steps 4->3, AllowedRoutes 3->2），go test/vet/build 全量通过
+
+---
+
+## 遇到的错误
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
+| TestParse_AgentWorkflowFile 失败 | 1 | workflow 移除 upload-avatar 后 steps 从 4 变为 3，allowed-routes 从 3 变为 2，更新测试断言 |
