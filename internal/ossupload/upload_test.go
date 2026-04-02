@@ -3,6 +3,7 @@ package ossupload
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -104,5 +105,89 @@ func TestParseFileName(t *testing.T) {
 				t.Errorf("suffix = %q, want %q", suffix, tt.wantSuffix)
 			}
 		})
+	}
+}
+
+func TestUploadToOSS_Success(t *testing.T) {
+	var receivedKey, receivedName string
+	ossServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("OSS method = %q, want POST", r.Method)
+		}
+		reader, err := r.MultipartReader()
+		if err != nil {
+			t.Fatalf("MultipartReader error: %v", err)
+		}
+		for {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatalf("NextPart error: %v", err)
+			}
+			switch part.FormName() {
+			case "key":
+				buf, _ := io.ReadAll(part)
+				receivedKey = string(buf)
+			case "name":
+				buf, _ := io.ReadAll(part)
+				receivedName = string(buf)
+			case "file":
+				// consume the file part
+				io.ReadAll(part)
+			}
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ossServer.Close()
+
+	signResp := &ImageSignResponse{
+		Key:                 "lj7l/resource/imgs/test/upload.png",
+		Host:                ossServer.URL,
+		Policy:              "test-policy",
+		OSSAccessKeyID:      "test-key-id",
+		Signature:           "test-sig",
+		Callback:            "test-cb",
+		SuccessActionStatus: "200",
+		Origin:              "0",
+	}
+
+	err := uploadToOSS(context.Background(), signResp, []byte("fake image data"), "avatar", ".png")
+	if err != nil {
+		t.Fatalf("uploadToOSS() error = %v", err)
+	}
+	if receivedKey != "lj7l/resource/imgs/test/upload.png" {
+		t.Errorf("key = %q, want %q", receivedKey, "lj7l/resource/imgs/test/upload.png")
+	}
+	if receivedName != "avatar" {
+		t.Errorf("name = %q, want %q", receivedName, "avatar")
+	}
+}
+
+func TestUploadToOSS_ServerError(t *testing.T) {
+	ossServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("AccessDenied"))
+	}))
+	defer ossServer.Close()
+
+	signResp := &ImageSignResponse{
+		Key:                 "test-key",
+		Host:                ossServer.URL,
+		Policy:              "test-policy",
+		OSSAccessKeyID:      "test-key-id",
+		Signature:           "test-sig",
+		Callback:            "test-cb",
+		SuccessActionStatus: "200",
+		Origin:              "0",
+	}
+
+	err := uploadToOSS(context.Background(), signResp, []byte("data"), "test", ".png")
+	if err == nil {
+		t.Fatal("uploadToOSS() should return error for 403")
+	}
+	if !strings.Contains(err.Error(), "OSS 上传失败") {
+		t.Errorf("error = %q, want OSS upload error", err.Error())
 	}
 }

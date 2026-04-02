@@ -1,10 +1,13 @@
 package ossupload
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
@@ -143,4 +146,63 @@ func extFromContentType(ct string) string {
 		return exts[0]
 	}
 	return ".png"
+}
+
+// uploadToOSS 直传图片到阿里云 OSS（multipart/form-data）
+func uploadToOSS(ctx context.Context, signResp *ImageSignResponse, imageBytes []byte, fileName, suffix string) error {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// 按顺序写入签名字段
+	fields := []struct{ key, value string }{
+		{"key", signResp.Key},
+		{"policy", signResp.Policy},
+		{"OSSAccessKeyId", signResp.OSSAccessKeyID},
+		{"success_action_status", signResp.SuccessActionStatus},
+		{"callback", signResp.Callback},
+		{"signature", signResp.Signature},
+		{"origin", signResp.Origin},
+		{"name", fileName},
+		{"x:realname", fileName},
+	}
+	for _, f := range fields {
+		if err := writer.WriteField(f.key, f.value); err != nil {
+			return fmt.Errorf("写入 OSS 表单字段 %s 失败: %w", f.key, err)
+		}
+	}
+
+	part, err := writer.CreateFormFile("file", fileName+suffix)
+	if err != nil {
+		return fmt.Errorf("创建 OSS 文件表单字段失败: %w", err)
+	}
+	if _, err := part.Write(imageBytes); err != nil {
+		return fmt.Errorf("写入 OSS 文件数据失败: %w", err)
+	}
+	writer.Close()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", signResp.Host, body)
+	if err != nil {
+		return fmt.Errorf("创建 OSS 上传请求失败: %w", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	slog.InfoContext(ctx, "oss_upload_request",
+		"url", signResp.Host,
+		"key", signResp.Key,
+		"size_bytes", len(imageBytes),
+	)
+
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("OSS 上传请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("OSS 上传失败: HTTP %d", resp.StatusCode)
+	}
+
+	slog.InfoContext(ctx, "oss_upload_response", "status", resp.StatusCode)
+	return nil
 }
