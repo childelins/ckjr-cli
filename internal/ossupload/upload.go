@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ type ImageSignResponse struct {
 	Signature           string `json:"signature"`
 	Callback            string `json:"callback"`
 	SuccessActionStatus string `json:"success_action_status"`
-	Origin              string `json:"origin"`
+	Origin              int    `json:"origin"`
 	Host                string `json:"host"`
 }
 
@@ -163,7 +164,7 @@ func uploadToOSS(ctx context.Context, signResp *ImageSignResponse, imageBytes []
 		{"success_action_status", signResp.SuccessActionStatus},
 		{"callback", signResp.Callback},
 		{"signature", signResp.Signature},
-		{"origin", signResp.Origin},
+		{"origin", strconv.Itoa(signResp.Origin)},
 		{"name", fileName},
 		{"x:realname", fileName},
 	}

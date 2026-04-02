@@ -153,7 +153,7 @@ func TestUploadToOSS_Success(t *testing.T) {
 		Signature:           "test-sig",
 		Callback:            "test-cb",
 		SuccessActionStatus: "200",
-		Origin:              "0",
+		Origin:              0,
 	}
 
 	err := uploadToOSS(context.Background(), signResp, []byte("fake image data"), "avatar", ".png")
@@ -183,7 +183,7 @@ func TestUploadToOSS_ServerError(t *testing.T) {
 		Signature:           "test-sig",
 		Callback:            "test-cb",
 		SuccessActionStatus: "200",
-		Origin:              "0",
+		Origin:              0,
 	}
 
 	err := uploadToOSS(context.Background(), signResp, []byte("data"), "test", ".png")
@@ -224,7 +224,7 @@ func TestUpload_Success(t *testing.T) {
 					"signature":             "test-sig",
 					"callback":              "test-callback-base64",
 					"success_action_status": "200",
-					"origin":                "0",
+					"origin":                0,
 					"host":                  ossServer.URL,
 				},
 				Message:    "ok",
@@ -286,7 +286,7 @@ func TestUpload_DownloadFails(t *testing.T) {
 				"signature":             "test-sig",
 				"callback":              "test-cb",
 				"success_action_status": "200",
-				"origin":                "0",
+				"origin":                0,
 				"host":                  "https://oss.example.com",
 			},
 			Message:    "ok",
