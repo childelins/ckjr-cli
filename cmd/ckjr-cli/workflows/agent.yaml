@@ -11,6 +11,7 @@ workflows:
     allowed-routes:
       - agent
       - common
+      - asset
     inputs:
       - name: name
         description: 智能体名称
@@ -31,13 +32,20 @@ workflows:
         required: false
         hint: 根据智能体角色生成一条友好的开场白
     steps:
+      - id: upload-avatar
+        description: 如果头像是外部图片URL，先转存到系统素材库
+        command: asset upload-image
+        params:
+          url: "{{inputs.avatar}}"
+        output:
+          imageUrl: "response.imageUrl"
       - id: create
         description: 创建智能体基本信息
         command: agent create
         params:
           name: "{{inputs.name}}"
           desc: "{{inputs.desc}}"
-          avatar: "{{inputs.avatar}}"
+          avatar: "{{steps.upload-avatar.imageUrl}}"
         output:
           aikbId: "response.aikbId"
       - id: configure
@@ -47,7 +55,7 @@ workflows:
           aikbId: "{{steps.create.aikbId}}"
           name: "{{inputs.name}}"
           desc: "{{inputs.desc}}"
-          avatar: "{{inputs.avatar}}"
+          avatar: "{{steps.upload-avatar.imageUrl}}"
           instructions: "{{inputs.instructions}}"
           greeting: "{{inputs.greeting}}"
       - id: get-link
