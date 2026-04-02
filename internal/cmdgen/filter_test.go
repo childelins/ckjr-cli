@@ -94,122 +94,6 @@ func TestSetNestedValue(t *testing.T) {
 	})
 }
 
-func TestDeleteNestedPath(t *testing.T) {
-	t.Run("delete nested key", func(t *testing.T) {
-		m := map[string]interface{}{
-			"data": map[string]interface{}{
-				"courseId": float64(1),
-				"name":     "Go",
-			},
-		}
-		deleted := deleteNestedPath(m, "data.courseId")
-		if !deleted {
-			t.Fatal("expected deleted=true")
-		}
-		data := m["data"].(map[string]interface{})
-		if _, exists := data["courseId"]; exists {
-			t.Error("courseId should be deleted")
-		}
-		if data["name"] != "Go" {
-			t.Error("name should be preserved")
-		}
-	})
-
-	t.Run("nonexistent path", func(t *testing.T) {
-		m := map[string]interface{}{"a": float64(1)}
-		deleted := deleteNestedPath(m, "a.b")
-		if deleted {
-			t.Fatal("expected deleted=false for nonexistent path")
-		}
-	})
-
-	t.Run("nonexistent root", func(t *testing.T) {
-		m := map[string]interface{}{"a": float64(1)}
-		deleted := deleteNestedPath(m, "missing.key")
-		if deleted {
-			t.Fatal("expected deleted=false")
-		}
-	})
-}
-
-func TestDeleteNestedPath_ArrayTraversal(t *testing.T) {
-	t.Run("deletes field in each array element", func(t *testing.T) {
-		m := map[string]interface{}{
-			"list": map[string]interface{}{
-				"data": []interface{}{
-					map[string]interface{}{"id": float64(1), "secret": "x"},
-					map[string]interface{}{"id": float64(2), "secret": "y"},
-				},
-			},
-		}
-		deleted := deleteNestedPath(m, "list.data.secret")
-		if !deleted {
-			t.Fatal("expected deleted=true")
-		}
-		data := m["list"].(map[string]interface{})["data"].([]interface{})
-		for i, elem := range data {
-			em := elem.(map[string]interface{})
-			if _, exists := em["secret"]; exists {
-				t.Errorf("element %d: secret should be deleted", i)
-			}
-			if _, exists := em["id"]; !exists {
-				t.Errorf("element %d: id should be preserved", i)
-			}
-		}
-	})
-
-	t.Run("empty array returns false", func(t *testing.T) {
-		m := map[string]interface{}{
-			"list": map[string]interface{}{
-				"data": []interface{}{},
-			},
-		}
-		deleted := deleteNestedPath(m, "list.data.secret")
-		if deleted {
-			t.Fatal("expected deleted=false for empty array")
-		}
-	})
-
-	t.Run("skips non-map elements in array", func(t *testing.T) {
-		m := map[string]interface{}{
-			"items": []interface{}{
-				map[string]interface{}{"id": float64(1), "secret": "x"},
-				"not a map",
-				map[string]interface{}{"id": float64(2), "secret": "y"},
-			},
-		}
-		deleted := deleteNestedPath(m, "items.secret")
-		if !deleted {
-			t.Fatal("expected deleted=true")
-		}
-	})
-}
-
-func TestDeepCopyMap(t *testing.T) {
-	original := map[string]interface{}{
-		"a": float64(1),
-		"nested": map[string]interface{}{
-			"b": float64(2),
-		},
-	}
-	copy := deepCopyMap(original)
-
-	// Equal content
-	if !reflect.DeepEqual(copy, original) {
-		t.Errorf("copy should equal original, got %v", copy)
-	}
-
-	// Independent mutation
-	copy["a"] = float64(99)
-	if original["a"] != float64(1) {
-		t.Error("modifying copy should not affect original")
-	}
-	copy["nested"].(map[string]interface{})["b"] = float64(99)
-	if original["nested"].(map[string]interface{})["b"] != float64(2) {
-		t.Error("nested mutation should not affect original")
-	}
-}
-
 func TestGetNestedValue_ArrayTraversal(t *testing.T) {
 	m := map[string]interface{}{
 		"list": map[string]interface{}{
@@ -271,25 +155,6 @@ func TestGetNestedValue_ArrayTraversal(t *testing.T) {
 			t.Errorf("got %v, want %v", val, want)
 		}
 	})
-}
-
-func TestDeepCopyMap_ArrayWithMaps(t *testing.T) {
-	original := map[string]interface{}{
-		"list": []interface{}{
-			map[string]interface{}{"id": float64(1), "name": "Go"},
-			map[string]interface{}{"id": float64(2), "name": "Rust"},
-		},
-	}
-	cp := deepCopyMap(original)
-
-	// 修改拷贝中数组内的 map，不应影响原始数据
-	cpList := cp["list"].([]interface{})
-	cpList[0].(map[string]interface{})["name"] = "Python"
-
-	origList := original["list"].([]interface{})
-	if origList[0].(map[string]interface{})["name"] != "Go" {
-		t.Error("modifying copy's array element should not affect original")
-	}
 }
 
 func TestFilterByFields_NestedPath(t *testing.T) {
@@ -375,48 +240,6 @@ func TestFilterByFields_NestedPathPreservesStructure(t *testing.T) {
 	}
 }
 
-func TestFilterByExclude_NestedPath(t *testing.T) {
-	m := map[string]interface{}{
-		"data": map[string]interface{}{
-			"courseId": float64(1),
-			"name":     "Go",
-			"secret":   "hidden",
-		},
-	}
-	exclude := []string{"data.secret"}
-
-	result := filterByExclude(m, exclude)
-
-	want := map[string]interface{}{
-		"data": map[string]interface{}{
-			"courseId": float64(1),
-			"name":     "Go",
-		},
-	}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("got %v, want %v", result, want)
-	}
-	// 原始不应被修改
-	origData := m["data"].(map[string]interface{})
-	if _, exists := origData["secret"]; !exists {
-		t.Error("original map should not be modified")
-	}
-}
-
-func TestFilterByExclude_NestedPathPreservesOriginal(t *testing.T) {
-	m := map[string]interface{}{
-		"data": map[string]interface{}{
-			"a": float64(1),
-		},
-	}
-	filterByExclude(m, []string{"data.a"})
-
-	// 原始 map 不应被修改
-	if _, exists := m["data"].(map[string]interface{})["a"]; !exists {
-		t.Error("exclude should deep copy before deleting")
-	}
-}
-
 func TestFilterByFields_ArrayTraversal(t *testing.T) {
 	m := map[string]interface{}{
 		"list": map[string]interface{}{
@@ -492,38 +315,6 @@ func TestFilterByFields_ArrayTraversal_NonMapElements(t *testing.T) {
 	}
 }
 
-func TestFilterByExclude_ArrayTraversal(t *testing.T) {
-	m := map[string]interface{}{
-		"list": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"id": float64(1), "name": "Go", "secret": "x"},
-				map[string]interface{}{"id": float64(2), "name": "Rust", "secret": "y"},
-			},
-			"total": float64(2),
-		},
-	}
-	result := filterByExclude(m, []string{"list.data.secret"})
-
-	want := map[string]interface{}{
-		"list": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"id": float64(1), "name": "Go"},
-				map[string]interface{}{"id": float64(2), "name": "Rust"},
-			},
-			"total": float64(2),
-		},
-	}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("got %v, want %v", result, want)
-	}
-
-	// 原始数据不应被修改
-	origData := m["list"].(map[string]interface{})["data"].([]interface{})
-	if _, exists := origData[0].(map[string]interface{})["secret"]; !exists {
-		t.Error("original data should not be modified")
-	}
-}
-
 // TestFilterByFields_NestedDotKey tests that plain keys with no dot work as before
 func TestFilterByFields_BackwardCompatNoDot(t *testing.T) {
 	m := map[string]interface{}{
@@ -533,19 +324,6 @@ func TestFilterByFields_BackwardCompatNoDot(t *testing.T) {
 	fields := []string{"a"}
 
 	result := filterByFields(m, fields)
-
-	want := map[string]interface{}{"a": float64(1)}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("got %v, want %v", result, want)
-	}
-}
-
-// TestFilterByExclude_BackwardCompatNoDot tests that plain exclude keys work as before
-func TestFilterByExclude_BackwardCompatNoDot(t *testing.T) {
-	m := map[string]interface{}{"a": float64(1), "b": float64(2)}
-	exclude := []string{"b"}
-
-	result := filterByExclude(m, exclude)
 
 	want := map[string]interface{}{"a": float64(1)}
 	if !reflect.DeepEqual(result, want) {
@@ -576,30 +354,6 @@ func TestFilterResponse_NestedFields(t *testing.T) {
 		"data": map[string]interface{}{
 			"courseId": float64(15427611),
 			"name":     "Go 入门",
-		},
-	}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("got %v, want %v", result, want)
-	}
-}
-
-// TestFilterResponse_NestedExclude tests FilterResponse with nested dot exclude paths
-func TestFilterResponse_NestedExclude(t *testing.T) {
-	m := map[string]interface{}{
-		"code": float64(0),
-		"data": map[string]interface{}{
-			"courseId": float64(1),
-			"ext":      map[string]interface{}{"foo": "bar"},
-		},
-	}
-	filter := &router.ResponseFilter{Exclude: []string{"data.ext"}}
-
-	result := FilterResponse(m, filter)
-
-	want := map[string]interface{}{
-		"code": float64(0),
-		"data": map[string]interface{}{
-			"courseId": float64(1),
 		},
 	}
 	if !reflect.DeepEqual(result, want) {
@@ -674,49 +428,6 @@ func TestFilterByFields_PreservesNested(t *testing.T) {
 	}
 }
 
-func TestFilterByExclude_AllMatch(t *testing.T) {
-	m := map[string]interface{}{
-		"courseId":     float64(1),
-		"name":         "Go",
-		"detailInfo":   "big data",
-		"internalFlag": true,
-	}
-	exclude := []string{"detailInfo", "internalFlag"}
-
-	result := filterByExclude(m, exclude)
-
-	want := map[string]interface{}{
-		"courseId": float64(1),
-		"name":     "Go",
-	}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("got %v, want %v", result, want)
-	}
-}
-
-func TestFilterByExclude_PartialMatch(t *testing.T) {
-	m := map[string]interface{}{"a": float64(1), "b": float64(2)}
-	exclude := []string{"a", "nonexistent"}
-
-	result := filterByExclude(m, exclude)
-
-	want := map[string]interface{}{"b": float64(2)}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("got %v, want %v", result, want)
-	}
-}
-
-func TestFilterByExclude_NoneMatch(t *testing.T) {
-	m := map[string]interface{}{"a": float64(1), "b": float64(2)}
-	exclude := []string{"x", "y"}
-
-	result := filterByExclude(m, exclude)
-
-	if !reflect.DeepEqual(result, m) {
-		t.Errorf("should return original when nothing to exclude, got %v", result)
-	}
-}
-
 func TestFilterResponse_ListWithFields(t *testing.T) {
 	m := map[string]interface{}{
 		"list": map[string]interface{}{
@@ -767,35 +478,6 @@ func TestFilterResponse_ListWithFields(t *testing.T) {
 	}
 	if _, exists := item["permission"]; exists {
 		t.Error("permission should be filtered out")
-	}
-}
-
-func TestFilterResponse_ListWithExclude(t *testing.T) {
-	m := map[string]interface{}{
-		"list": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"id": float64(1), "name": "Go", "secret": "x"},
-				map[string]interface{}{"id": float64(2), "name": "Rust", "secret": "y"},
-			},
-			"total": float64(2),
-		},
-	}
-	filter := &router.ResponseFilter{
-		Exclude: []string{"list.data.secret"},
-	}
-
-	result := FilterResponse(m, filter)
-
-	rm := result.(map[string]interface{})
-	data := rm["list"].(map[string]interface{})["data"].([]interface{})
-	for i, elem := range data {
-		em := elem.(map[string]interface{})
-		if _, exists := em["secret"]; exists {
-			t.Errorf("element %d: secret should be excluded", i)
-		}
-		if _, exists := em["name"]; !exists {
-			t.Errorf("element %d: name should be preserved", i)
-		}
 	}
 }
 
@@ -854,34 +536,6 @@ func TestFilterResponse_FieldsOnly(t *testing.T) {
 	}
 }
 
-func TestFilterResponse_ExcludeOnly(t *testing.T) {
-	m := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(3)}
-	filter := &router.ResponseFilter{Exclude: []string{"b"}}
-
-	result := FilterResponse(m, filter)
-
-	want := map[string]interface{}{"a": float64(1), "c": float64(3)}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("got %v, want %v", result, want)
-	}
-}
-
-func TestFilterResponse_FieldsAndExclude(t *testing.T) {
-	// 同时配置时 fields 优先，exclude 被忽略
-	m := map[string]interface{}{"a": float64(1), "b": float64(2), "c": float64(3)}
-	filter := &router.ResponseFilter{
-		Fields:  []router.ResponseField{{Path: "a"}},
-		Exclude: []string{"a", "b"},
-	}
-
-	result := FilterResponse(m, filter)
-
-	want := map[string]interface{}{"a": float64(1)}
-	if !reflect.DeepEqual(result, want) {
-		t.Errorf("fields should take priority, got %v, want %v", result, want)
-	}
-}
-
 func TestFilterResponse_EmptyFields(t *testing.T) {
 	m := map[string]interface{}{"a": float64(1)}
 	filter := &router.ResponseFilter{Fields: []router.ResponseField{}}
@@ -891,17 +545,6 @@ func TestFilterResponse_EmptyFields(t *testing.T) {
 	// 空 fields 等同于未配置，全量返回
 	if !reflect.DeepEqual(result, m) {
 		t.Errorf("empty fields should return original, got %v", result)
-	}
-}
-
-func TestFilterResponse_EmptyExclude(t *testing.T) {
-	m := map[string]interface{}{"a": float64(1)}
-	filter := &router.ResponseFilter{Exclude: []string{}}
-
-	result := FilterResponse(m, filter)
-
-	if !reflect.DeepEqual(result, m) {
-		t.Errorf("empty exclude should return original, got %v", result)
 	}
 }
 
