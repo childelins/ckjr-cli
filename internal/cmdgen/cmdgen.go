@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 
 	"github.com/childelins/ckjr-cli/internal/api"
 	"github.com/childelins/ckjr-cli/internal/logging"
+	"github.com/childelins/ckjr-cli/internal/ossupload"
 	"github.com/childelins/ckjr-cli/internal/output"
 	"github.com/childelins/ckjr-cli/internal/router"
 )
@@ -219,6 +221,50 @@ func normalizeDefault(val interface{}) interface{} {
 		return float64(v)
 	}
 	return val
+}
+
+// processAutoUpload 扫描 template 中 autoUpload=image 的字段，
+// 对外部 URL 执行转存，将 input 中对应值替换为转存后的 OSS URL
+func processAutoUpload(ctx context.Context, input map[string]interface{},
+	template map[string]router.Field, apiClient *api.Client) error {
+
+	for name, field := range template {
+		if field.AutoUpload != "image" {
+			continue
+		}
+
+		val, exists := input[name]
+		if !exists {
+			continue
+		}
+
+		urlStr, ok := val.(string)
+		if !ok || urlStr == "" {
+			continue
+		}
+
+		if !ossupload.IsExternalURL(urlStr) {
+			continue
+		}
+
+		slog.InfoContext(ctx, "auto_upload_start",
+			"field", name,
+			"original_url", urlStr,
+		)
+
+		result, err := ossupload.Upload(ctx, apiClient, urlStr)
+		if err != nil {
+			return fmt.Errorf("字段 %s 图片转存失败: %w", name, err)
+		}
+
+		input[name] = result.ImageURL
+
+		slog.InfoContext(ctx, "auto_upload_complete",
+			"field", name,
+			"new_url", result.ImageURL,
+		)
+	}
+	return nil
 }
 
 func validateRequired(input map[string]interface{}, template map[string]router.Field) []string {
