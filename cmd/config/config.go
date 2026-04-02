@@ -44,10 +44,7 @@ func NewCommand() *cobra.Command {
 
 func runConfigInit(cmd *cobra.Command, args []string) {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("请输入 API 地址 (base_url): ")
-	baseURL, _ := reader.ReadString('\n')
-	baseURL = strings.TrimSpace(baseURL)
-	fmt.Println("\n请按以下步骤获取 API Key:")
+	fmt.Println("请按以下步骤获取 API Key:")
 	fmt.Println("1. 访问公司 SaaS 平台并登录")
 	fmt.Println("2. 进入个人设置 -> API 密钥")
 	fmt.Println("3. 复制 API Key")
@@ -56,8 +53,7 @@ func runConfigInit(cmd *cobra.Command, args []string) {
 	apiKey = strings.TrimSpace(apiKey)
 
 	cfg := &internalconfig.Config{
-		BaseURL: baseURL,
-		APIKey:  apiKey,
+		APIKey: apiKey,
 	}
 	if err := internalconfig.Save(cfg); err != nil {
 		output.PrintError(os.Stderr, fmt.Sprintf("保存配置失败: %v", err))

@@ -168,6 +168,49 @@ func TestConfigShowEmptyBaseURL(t *testing.T) {
 	}
 }
 
+func TestConfigInitSavesEmptyBaseURL(t *testing.T) {
+	_, cleanup := setupTestConfig(t)
+	defer cleanup()
+
+	// 模拟用户输入：只输入 api_key
+	input := "test-api-key-12345\n"
+	r, w, _ := os.Pipe()
+	w.WriteString(input)
+	w.Close()
+
+	oldStdin := os.Stdin
+	os.Stdin = r
+	defer func() { os.Stdin = oldStdin }()
+
+	// 重定向 stdout 避免输出到终端
+	oldStdout := os.Stdout
+	_, wOut, _ := os.Pipe()
+	os.Stdout = wOut
+	defer func() {
+		wOut.Close()
+		os.Stdout = oldStdout
+	}()
+
+	cmd := NewCommand()
+	cmd.SetArgs([]string{"init"})
+	cmd.Execute()
+
+	wOut.Close()
+	os.Stdout = oldStdout
+
+	// 验证保存后的配置
+	loaded, err := internalconfig.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if loaded.BaseURL != "" {
+		t.Errorf("BaseURL = %q, want empty string", loaded.BaseURL)
+	}
+	if loaded.APIKey != "test-api-key-12345" {
+		t.Errorf("APIKey = %q, want test-api-key-12345", loaded.APIKey)
+	}
+}
+
 func TestConfigFilePermissions(t *testing.T) {
 	_, cleanup := setupTestConfig(t)
 	defer cleanup()
