@@ -258,16 +258,16 @@ func TestParse_AgentWorkflowFile(t *testing.T) {
 	if !ok {
 		t.Fatal("缺少 create-agent workflow")
 	}
-	if len(wf.Steps) != 4 {
-		t.Errorf("Steps 长度 = %d, want 4", len(wf.Steps))
+	if len(wf.Steps) != 3 {
+		t.Errorf("Steps 长度 = %d, want 3", len(wf.Steps))
 	}
 	if len(wf.Inputs) != 5 {
 		t.Errorf("Inputs 长度 = %d, want 5", len(wf.Inputs))
 	}
-	if len(wf.AllowedRoutes) != 3 {
-		t.Errorf("AllowedRoutes 长度 = %d, want 3", len(wf.AllowedRoutes))
+	if len(wf.AllowedRoutes) != 2 {
+		t.Errorf("AllowedRoutes 长度 = %d, want 2", len(wf.AllowedRoutes))
 	}
-	if wf.AllowedRoutes[0] != "agent" || wf.AllowedRoutes[1] != "common" || wf.AllowedRoutes[2] != "asset" {
-		t.Errorf("AllowedRoutes = %v, want [agent, common, asset]", wf.AllowedRoutes)
+	if wf.AllowedRoutes[0] != "agent" || wf.AllowedRoutes[1] != "common" {
+		t.Errorf("AllowedRoutes = %v, want [agent, common]", wf.AllowedRoutes)
 	}
 }
