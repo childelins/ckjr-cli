@@ -79,3 +79,30 @@ func TestDownloadImage_HTTPError(t *testing.T) {
 		t.Fatal("downloadImage() should return error for 404")
 	}
 }
+
+func TestParseFileName(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		contentType string
+		wantBase    string
+		wantSuffix  string
+	}{
+		{"png from URL", "https://example.com/path/avatar.png", "image/png", "avatar", ".png"},
+		{"jpeg from URL", "https://example.com/photo.jpg", "image/jpeg", "photo", ".jpg"},
+		{"no extension uses content type", "https://example.com/abc123", "image/png", "abc123", ".png"},
+		{"unknown extension uses content type", "https://example.com/img.xyz", "image/jpeg", "img", ".jpg"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			base, suffix := parseFileName(tt.url, tt.contentType)
+			if base != tt.wantBase {
+				t.Errorf("base = %q, want %q", base, tt.wantBase)
+			}
+			if suffix != tt.wantSuffix {
+				t.Errorf("suffix = %q, want %q", suffix, tt.wantSuffix)
+			}
+		})
+	}
+}

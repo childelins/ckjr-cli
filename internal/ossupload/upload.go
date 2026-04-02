@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 )
@@ -94,4 +96,51 @@ func downloadImage(ctx context.Context, imageURL string) ([]byte, string, error)
 func isImageContentType(ct string) bool {
 	ct = strings.ToLower(ct)
 	return strings.HasPrefix(ct, "image/")
+}
+
+// parseFileName 从 URL 和 Content-Type 中提取文件名和扩展名
+func parseFileName(imageURL, contentType string) (base, suffix string) {
+	u, err := url.Parse(imageURL)
+	if err != nil {
+		return "image", extFromContentType(contentType)
+	}
+
+	fileName := path.Base(u.Path)
+	ext := path.Ext(fileName)
+	base = strings.TrimSuffix(fileName, ext)
+
+	if ext == "" || !isKnownImageExt(ext) {
+		return base, extFromContentType(contentType)
+	}
+
+	return base, ext
+}
+
+// isKnownImageExt 检查是否为已知图片扩展名
+func isKnownImageExt(ext string) bool {
+	switch strings.ToLower(ext) {
+	case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg":
+		return true
+	}
+	return false
+}
+
+// extFromContentType 从 Content-Type 推断扩展名
+func extFromContentType(ct string) string {
+	exts, _ := mime.ExtensionsByType(ct)
+	if len(exts) > 0 {
+		// mime.ExtensionsByType 对 image/jpeg 返回 [.jpe .jpeg .jpg]，优先选常见扩展名
+		for _, e := range exts {
+			if e == ".jpg" {
+				return ".jpg"
+			}
+		}
+		for _, e := range exts {
+			if e == ".jpeg" || e == ".png" || e == ".gif" || e == ".webp" {
+				return e
+			}
+		}
+		return exts[0]
+	}
+	return ".png"
 }
