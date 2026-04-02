@@ -169,6 +169,9 @@ func printTemplateTo(w io.Writer, template map[string]router.Field, response *ro
 		if t == "date" {
 			entry["note"] = "日期格式: YYYY-MM-DD HH:MM:SS"
 		}
+		if field.AutoUpload == "image" {
+			entry["note"] = "外部图片URL将自动转存到系统素材库"
+		}
 		if field.Example != "" {
 			entry["example"] = field.Example
 		}

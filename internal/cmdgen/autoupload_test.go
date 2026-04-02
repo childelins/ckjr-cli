@@ -360,3 +360,44 @@ func TestBuildSubCommand_AutoUpload(t *testing.T) {
 		t.Error("avatar should not be empty")
 	}
 }
+
+func TestPrintTemplate_AutoUploadNote(t *testing.T) {
+	template := map[string]router.Field{
+		"avatar": {
+			Description: "头像URL",
+			Required:    true,
+			Type:        "string",
+			AutoUpload:  "image",
+		},
+		"name": {
+			Description: "名称",
+			Required:    true,
+			Type:        "string",
+		},
+	}
+
+	var buf bytes.Buffer
+	printTemplateTo(&buf, template, nil)
+
+	var outer map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &outer); err != nil {
+		t.Fatalf("JSON parse error: %v", err)
+	}
+	result := outer["request"].(map[string]interface{})
+
+	// avatar 字段应有 autoUpload note
+	avatarEntry := result["avatar"].(map[string]interface{})
+	note, ok := avatarEntry["note"]
+	if !ok {
+		t.Fatal("avatar (autoUpload=image) should have note field")
+	}
+	if note != "外部图片URL将自动转存到系统素材库" {
+		t.Errorf("note = %q, want %q", note, "外部图片URL将自动转存到系统素材库")
+	}
+
+	// name 字段不应有 note
+	nameEntry := result["name"].(map[string]interface{})
+	if _, exists := nameEntry["note"]; exists {
+		t.Error("name (no autoUpload) should not have note field")
+	}
+}
