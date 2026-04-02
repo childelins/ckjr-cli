@@ -42,6 +42,7 @@ func SetVersion(v string) {
 // SetEnvironment 由 main 包调用，通过 ldflags 注入环境模式
 func SetEnvironment(e string) {
 	environment = e
+	internalconfig.SetEnvironment(e)
 }
 
 var rootCmd = &cobra.Command{
@@ -117,5 +118,5 @@ func createClient() (*api.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("未找到配置文件，请先执行 ckjr-cli config init")
 	}
-	return api.NewClient(cfg.BaseURL, cfg.APIKey), nil
+	return api.NewClient(cfg.ResolveBaseURL(), cfg.APIKey), nil
 }
