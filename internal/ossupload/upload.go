@@ -13,6 +13,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/childelins/ckjr-cli/internal/api"
 )
 
 const maxImageSize = 10 * 1024 * 1024 // 10MB
@@ -205,4 +207,62 @@ func uploadToOSS(ctx context.Context, signResp *ImageSignResponse, imageBytes []
 
 	slog.InfoContext(ctx, "oss_upload_response", "status", resp.StatusCode)
 	return nil
+}
+
+// Upload 将外部图片 URL 转存到素材库
+//
+// 完整流程：imageSign -> 下载外部图片 -> 直传 OSS -> addImgInAsset
+func Upload(ctx context.Context, apiClient *api.Client, imageURL string) (*AssetImage, error) {
+	// Step 1: 获取 OSS 上传签名
+	var signResp ImageSignResponse
+	if err := apiClient.DoCtx(ctx, "GET", "/admin/assets/imageSign?type=2", nil, &signResp); err != nil {
+		return nil, fmt.Errorf("获取 OSS 上传签名失败: %w", err)
+	}
+
+	// Step 2: 下载外部图片
+	imgBytes, contentType, err := downloadImage(ctx, imageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析文件名和扩展名
+	fileName, suffix := parseFileName(imageURL, contentType)
+	fileSizeMB := float64(len(imgBytes)) / 1024 / 1024
+
+	// Step 3: 直传 OSS
+	if err := uploadToOSS(ctx, &signResp, imgBytes, fileName, suffix); err != nil {
+		return nil, err
+	}
+
+	// Step 4: 保存到素材库
+	ossURL := signResp.Host + "/" + signResp.Key
+	payload := map[string]interface{}{
+		"data": []map[string]interface{}{
+			{
+				"fId":      -1,
+				"level":    1,
+				"parentId": 0,
+				"size":     fileSizeMB,
+				"height":   "",
+				"width":    "",
+				"suffix":   suffix,
+				"name":     fileName,
+				"imageUrl": ossURL,
+			},
+		},
+	}
+
+	var result interface{}
+	if err := apiClient.DoCtx(ctx, "POST", "/admin/assets/addImgInAsset", payload, &result); err != nil {
+		return nil, fmt.Errorf("保存到素材库失败: %w", err)
+	}
+
+	return &AssetImage{
+		ImageURL: ossURL,
+		Name:     fileName,
+		Suffix:   suffix,
+		Size:     fileSizeMB,
+		Width:    "",
+		Height:   "",
+	}, nil
 }

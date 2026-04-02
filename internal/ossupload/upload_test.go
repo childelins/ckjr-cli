@@ -3,11 +3,14 @@ package ossupload
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/childelins/ckjr-cli/internal/api"
 )
 
 func TestIsExternalURL(t *testing.T) {
@@ -189,5 +192,113 @@ func TestUploadToOSS_ServerError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "OSS 上传失败") {
 		t.Errorf("error = %q, want OSS upload error", err.Error())
+	}
+}
+
+func TestUpload_Success(t *testing.T) {
+	pngImage := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x01, 0x02, 0x03, 0x04}
+
+	// 模拟外部图片服务器
+	imageServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(pngImage)
+	}))
+	defer imageServer.Close()
+
+	// 模拟 OSS 服务器
+	ossServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ossServer.Close()
+
+	// 模拟 API 服务器（imageSign + addImgInAsset）
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/admin/assets/imageSign":
+			json.NewEncoder(w).Encode(api.Response{
+				Data: map[string]interface{}{
+					"key":                   "lj7l/resource/imgs/eeb49984/test.png",
+					"policy":                "test-policy-base64",
+					"OSSAccessKeyId":        "LTAIEooZEnvlRbrb",
+					"signature":             "test-sig",
+					"callback":              "test-callback-base64",
+					"success_action_status": "200",
+					"origin":                "0",
+					"host":                  ossServer.URL,
+				},
+				Message:    "ok",
+				StatusCode: 200,
+			})
+		case r.URL.Path == "/admin/assets/addImgInAsset":
+			json.NewEncoder(w).Encode(api.Response{
+				Data:       map[string]interface{}{"id": 123},
+				Message:    "ok",
+				StatusCode: 200,
+			})
+		}
+	}))
+	defer apiServer.Close()
+
+	apiClient := api.NewClient(apiServer.URL, "test-key")
+	result, err := Upload(context.Background(), apiClient, imageServer.URL+"/test/avatar.png")
+	if err != nil {
+		t.Fatalf("Upload() error = %v", err)
+	}
+	if result.ImageURL == "" {
+		t.Error("Upload() result.ImageURL should not be empty")
+	}
+	if result.Name != "avatar" {
+		t.Errorf("Upload() result.Name = %q, want %q", result.Name, "avatar")
+	}
+	if result.Suffix != ".png" {
+		t.Errorf("Upload() result.Suffix = %q, want %q", result.Suffix, ".png")
+	}
+}
+
+func TestUpload_ImageSignFails(t *testing.T) {
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(api.Response{
+			Message:    "Unauthorized",
+			StatusCode: 401,
+		})
+	}))
+	defer apiServer.Close()
+
+	apiClient := api.NewClient(apiServer.URL, "invalid-key")
+	_, err := Upload(context.Background(), apiClient, "https://example.com/avatar.png")
+	if err == nil {
+		t.Fatal("Upload() should return error when imageSign fails")
+	}
+}
+
+func TestUpload_DownloadFails(t *testing.T) {
+	// API 返回签名成功
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(api.Response{
+			Data: map[string]interface{}{
+				"key":                   "test-key",
+				"policy":                "test-policy",
+				"OSSAccessKeyId":        "test-id",
+				"signature":             "test-sig",
+				"callback":              "test-cb",
+				"success_action_status": "200",
+				"origin":                "0",
+				"host":                  "https://oss.example.com",
+			},
+			Message:    "ok",
+			StatusCode: 200,
+		})
+	}))
+	defer apiServer.Close()
+
+	apiClient := api.NewClient(apiServer.URL, "test-key")
+	// 图片 URL 指向不存在的服务器
+	_, err := Upload(context.Background(), apiClient, "http://127.0.0.1:1/nonexistent.png")
+	if err == nil {
+		t.Fatal("Upload() should return error when download fails")
 	}
 }
