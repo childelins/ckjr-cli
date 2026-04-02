@@ -128,7 +128,7 @@ template:
 
 ### YAML 配置
 
-在路由级别添加 `response` 字段。`fields` 支持两种写法混合使用：
+在路由级别添加 `response` 字段，直接使用列表格式。支持纯字符串和带描述的对象两种写法混合使用：
 
 ```yaml
 routes:
@@ -142,22 +142,12 @@ routes:
                 required: true
                 type: path
         response:
-            fields:
-                - data.courseId                    # 纯字符串：仅指定路径
-                - path: data.courseType             # 对象格式：路径 + 描述
-                  description: "课程类型, 0-视频 1-音频 2-图文"
-                - path: data.status
-                  description: "上架状态, 1-已上架 2-已下架"
-                - data.name                        # 不需要描述的字段照旧用字符串
-```
-
-或使用黑名单排除特定字段：
-
-```yaml
-response:
-    exclude:                     # 黑名单：排除这些字段
-        - data.detailInfo
-        - data.internalFlag
+            - data.courseId                    # 纯字符串：仅指定路径
+            - path: data.courseType             # 对象格式：路径 + 描述
+              description: "课程类型, 0-视频 1-音频 2-图文"
+            - path: data.status
+              description: "上架状态, 1-已上架 2-已下架"
+            - data.name                        # 不需要描述的字段照旧用字符串
 ```
 
 ### 字段描述
@@ -197,7 +187,7 @@ response:
 
 ### 点号路径
 
-`fields` 和 `exclude` 支持点号路径访问嵌套字段。例如 API 返回 `{"data": {"courseId": 1, "name": "Go"}}`：
+`response` 中的字段支持点号路径访问嵌套字段。例如 API 返回 `{"data": {"courseId": 1, "name": "Go"}}`：
 
 - `data.courseId` — 访问 `data` 下的 `courseId`
 - `code` — 访问顶层 `code` 字段（无点号，行为不变）
@@ -209,10 +199,8 @@ response:
 | 规则 | 说明 |
 |------|------|
 | `response` 整体可选 | 未配置时全量输出，行为与之前一致 |
-| `fields` 和 `exclude` 互斥 | 同时配置时 `fields` 优先，`exclude` 被忽略 |
-| 空列表等同于未配置 | `fields: []` 或 `exclude: []` 不会过滤任何字段 |
+| 空列表等同于未配置 | `response: []` 不会过滤任何字段 |
 | 支持点号路径 | `data.courseId` 访问嵌套字段，无点号时匹配顶层 key |
-| `exclude` 深拷贝后删除 | 原始响应不会被修改 |
 | 静默跳过不存在的字段 | 配置中声明但响应中没有的字段，无警告 |
 
 ## API 客户端

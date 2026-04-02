@@ -57,7 +57,7 @@ routes:
 
 ### response 字段（响应过滤）
 
-可选配置，用于限制 API 响应的输出字段。`fields` 支持纯字符串和带描述的对象两种格式混合使用：
+可选配置，用于限制 API 响应的输出字段。`response` 直接使用列表格式，支持纯字符串和带描述的对象两种格式混合使用：
 
 ```yaml
     get:
@@ -70,23 +70,19 @@ routes:
                 required: true
                 type: path
         response:
-            fields:
-                - data.id                              # 纯字符串
-                - path: data.status                    # 带描述的对象格式
-                  description: "状态, 1-上架 2-下架"
-                - data.name
-            # 或使用黑名单模式：
-            # exclude: [data.internalFlag, data.detailInfo]
+            - data.id                              # 纯字符串
+            - path: data.status                    # 带描述的对象格式
+              description: "状态, 1-上架 2-下架"
+            - data.name
 ```
 
 | 属性 | 类型 | 说明 |
 |------|------|------|
-| `fields` | list | 白名单，支持纯字符串（`- data.id`）和对象格式（`- path: ... description: ...`）混合 |
-| `exclude` | []string | 黑名单，排除列出的字段，支持点号路径 |
+| `response` | list | 白名单字段列表，支持纯字符串（`- data.id`）和对象格式（`- path: ... description: ...`）混合 |
 
-`fields` 中带 `description` 的字段会在 `--template` 输出的 `response` 部分展示描述信息，帮助 AI 理解返回字段含义。
+带 `description` 的字段会在 `--template` 输出的 `response` 部分展示描述信息，帮助 AI 理解返回字段含义。
 
-`fields` 和 `exclude` 互斥，同时配置时 `fields` 优先。未配置 `response` 时全量输出。
+未配置 `response` 时全量输出。
 
 ### template 字段完整属性
 
