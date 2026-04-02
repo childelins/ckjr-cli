@@ -22,6 +22,9 @@ type Field struct {
 	MinLength *int   `yaml:"minLength,omitempty"`
 	MaxLength *int   `yaml:"maxLength,omitempty"`
 	Pattern   string `yaml:"pattern,omitempty"`
+
+	// 自动转存标记，"image" 表示自动转存外部图片
+	AutoUpload string `yaml:"autoUpload,omitempty"`
 }
 
 // ResponseField 定义响应字段（路径 + 可选描述）

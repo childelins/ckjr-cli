@@ -316,6 +316,45 @@ nested: true
 	}
 }
 
+func TestParseRouteConfig_AutoUpload(t *testing.T) {
+	yamlContent := `
+name: test
+description: 测试自动上传
+routes:
+  create:
+    method: POST
+    path: /create
+    description: 创建
+    template:
+      avatar:
+        description: 头像URL
+        required: true
+        type: string
+        autoUpload: image
+      name:
+        description: 名称
+        required: true
+`
+	cfg, err := Parse([]byte(yamlContent))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	route := cfg.Routes["create"]
+
+	// avatar 字段应有 AutoUpload = "image"
+	avatarField := route.Template["avatar"]
+	if avatarField.AutoUpload != "image" {
+		t.Errorf("avatar.AutoUpload = %q, want \"image\"", avatarField.AutoUpload)
+	}
+
+	// name 字段不应有 AutoUpload
+	nameField := route.Template["name"]
+	if nameField.AutoUpload != "" {
+		t.Errorf("name.AutoUpload = %q, want empty", nameField.AutoUpload)
+	}
+}
+
 func TestRoute_ResponseFilter_Nil(t *testing.T) {
 	yamlData := `
 method: GET
