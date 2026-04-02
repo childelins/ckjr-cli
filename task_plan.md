@@ -1,6 +1,6 @@
 # 任务计划
 
-当前活跃任务: 无（环境配置默认 base_url 实现已完成）
+当前活跃任务: 无（Config Show Base URL 修复已完成）
 
 ---
 
@@ -120,6 +120,7 @@
 - [已完成] date 类型支持 (Phase 1-3, 2026-04-01)
 - [已完成] OSS 图片上传实现 (Task 1-8, 2026-04-02)
 - [已完成] 环境配置默认 base_url 实现 (Phase 1-2, 2026-04-02)
+- [已完成] Config Show Base URL 修复 (Phase 1-2, 2026-04-02)
 - 完整历史详见 docs/superpowers/archive/
 
 ---
@@ -147,6 +148,39 @@
 - **Source**: Plan -> Task 2
 - **Status**: complete (c6eb88b)
 - **Description**: cmd.SetEnvironment 转发给 config 包，createClient 使用 ResolveBaseURL
+
+---
+
+## 遇到的错误
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
+
+---
+
+# Config Show Base URL 修复 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-04-02-config-show-base-url-fix.md
+
+## 概述
+
+修复 config show 命令在 base_url 为空时显示空字符串的问题，改为显示环境默认 URL。
+
+---
+
+## Phase 1: 添加失败测试 + 修复 runConfigShow
+
+- **Source**: Plan -> Task 1-2
+- **Status**: complete
+- **Description**: TDD 先添加 TestConfigShowEmptyBaseURL 测试验证 base_url 为空时应返回环境默认值，然后将 cfg.BaseURL 替换为 cfg.ResolveBaseURL()
+
+---
+
+## Phase 2: 全量测试验证
+
+- **Source**: Plan -> Task 3
+- **Status**: complete
+- **Description**: cmd/config 7 个测试 + internal/config 9 个测试 + go build 全量编译均通过
 
 ---
 

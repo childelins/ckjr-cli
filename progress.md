@@ -229,3 +229,12 @@
 - cmd.SetEnvironment 转发给 internalconfig.SetEnvironment
 - createClient 改用 cfg.ResolveBaseURL() 替代 cfg.BaseURL
 - 全量 18 个包测试通过，编译通过
+
+## 2026-04-02 Config Show Base URL 修复
+
+### Phase 1: 添加失败测试 + 修复 runConfigShow
+- Status: complete
+- 问题: config show 的 base_url 直接使用 cfg.BaseURL，为空时输出空字符串
+- 修复: cmd/config/config.go:102 将 cfg.BaseURL 替换为 cfg.ResolveBaseURL()
+- 新增 TestConfigShowEmptyBaseURL 测试: 保存空 base_url 配置，通过 cobra 执行 config show，验证输出为环境默认值
+- cmd/config 7 个测试 + internal/config 9 个测试全部通过，go build 编译通过

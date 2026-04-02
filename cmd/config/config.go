@@ -99,7 +99,7 @@ func runConfigShow(cmd *cobra.Command, args []string) {
 	}
 	pretty, _ := cmd.Flags().GetBool("pretty")
 	result := map[string]string{
-		"base_url": cfg.BaseURL,
+		"base_url": cfg.ResolveBaseURL(),
 		"api_key":  cfg.MaskedAPIKey(),
 	}
 	output.Print(os.Stdout, result, pretty)

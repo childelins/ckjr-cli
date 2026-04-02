@@ -1,6 +1,8 @@
 package config
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -117,6 +119,52 @@ func TestConfigValidKeysCheck(t *testing.T) {
 		if validKeys[tt.key] != tt.valid {
 			t.Errorf("validKeys[%s] = %v, want %v", tt.key, validKeys[tt.key], tt.valid)
 		}
+	}
+}
+
+func TestConfigShowEmptyBaseURL(t *testing.T) {
+	_, cleanup := setupTestConfig(t)
+	defer cleanup()
+
+	// 设置 environment 使 DefaultBaseURL 返回已知值
+	internalconfig.SetEnvironment("development")
+
+	// 保存一个 base_url 为空的配置
+	cfg := &internalconfig.Config{
+		BaseURL: "",
+		APIKey:  "test-api-key-12345",
+	}
+	if err := internalconfig.Save(cfg); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	// 通过 cobra 命令执行 config show，捕获输出
+	cmd := NewCommand()
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetArgs([]string{"show"})
+
+	// 重定向 stdout 以捕获 output.Print 的输出
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd.Execute()
+
+	w.Close()
+	os.Stdout = oldStdout
+
+	var captured bytes.Buffer
+	captured.ReadFrom(r)
+
+	// 验证输出中 base_url 为环境默认值，不是空字符串
+	var result map[string]string
+	if err := json.Unmarshal(captured.Bytes(), &result); err != nil {
+		t.Fatalf("JSON parse error: %v, output: %s", err, captured.String())
+	}
+	expected := internalconfig.DefaultBaseURL()
+	if result["base_url"] != expected {
+		t.Errorf("base_url = %q, want %q", result["base_url"], expected)
 	}
 }
 
