@@ -35,6 +35,48 @@
 - cmdgen 包 80+ 测试全量通过，无回归
 - 发现: Go slice 不可用 == 比较，需拆分测试用例
 
+## 2026-04-02 OSS 图片上传实现
+
+### Task 1: 数据结构与 IsExternalURL
+- Status: complete (029ddb2)
+- 创建 internal/ossupload 包
+- 定义 ImageSignResponse、AssetImage 数据结构
+- 实现 IsExternalURL 辅助函数（检查 URL 是否为外部图片）
+
+### Task 2: 下载外部图片辅助函数
+- Status: complete (f80864b)
+- 实现 downloadImage 函数：支持 Content-Type 校验、大小限制（10MB）
+
+### Task 3: 文件名与扩展名解析辅助函数
+- Status: complete (fa8deb8)
+- 实现 parseFileName/isKnownImageExt/extFromContentType
+- 发现: mime.ExtensionsByType("image/jpeg") 返回 [.jpe .jpeg .jpg]，需优先选择 .jpg
+
+### Task 4: OSS 直传函数
+- Status: complete (5a54148)
+- 实现 uploadToOSS multipart/form-data 直传函数
+
+### Task 5: Upload 总入口函数
+- Status: complete (1e99ade)
+- 实现 Upload 函数编排完整 4 步流程：imageSign -> download -> uploadToOSS -> addImgInAsset
+
+### Task 6: asset upload-image 子命令
+- Status: complete (be3dc3a)
+- 创建 cmd/upload.go，注册 asset upload-image 子命令
+- 在 registerRouteCommands 中为 asset 命令额外添加 upload-image 子命令
+
+### Task 7: 更新 course workflow
+- Status: complete (c1d49ce)
+- course.yaml 三个工作流添加 upload-avatar 步骤
+- allowed-routes 添加 asset
+- yaml_validate_test.go 添加手动注册命令白名单
+
+### Task 8: 全量测试与编译验证
+- Status: complete
+- 全部 18 个包测试通过，无回归
+- go build ./... 编译通过
+- go run ./cmd/ckjr-cli asset upload-image --help 命令注册验证通过
+
 ### Task 5: 集成 FilterResponse 到 cmdgen 输出前
 - Status: complete (6372250)
 - cmdgen.go 在 output.Print 之前插入 `result = FilterResponse(result, route.Response)`
@@ -133,3 +175,57 @@
 - Status: complete (407464b)
 - core-concepts.md: 类型表新增 date 行
 - extending.md: type 属性说明补充 date 类型
+
+## 2026-04-02 OSS 图片上传实现
+
+### Task 1: 数据结构与 IsExternalURL
+- Status: complete (029ddb2)
+- 创建 internal/ossupload 包，定义 ImageSignResponse/AssetImage 结构体
+- 实现 IsExternalURL 辅助函数，识别 aliyuncs.com/ckjr001.com 域名
+
+### Task 2: 下载外部图片辅助函数
+- Status: complete (f80864b)
+- 实现 downloadImage 函数，支持 Content-Type 校验、大小限制（10MB）
+
+### Task 3: 文件名与扩展名解析辅助函数
+- Status: complete (fa8deb8)
+- 实现 parseFileName/isKnownImageExt/extFromContentType
+- 修复 mime.ExtensionsByType("image/jpeg") 返回 .jpe 而非 .jpg 的问题
+
+### Task 4: OSS 直传函数
+- Status: complete (5a54148)
+- 实现 uploadToOSS multipart/form-data 直传函数
+
+### Task 5: Upload 总入口函数
+- Status: complete (1e99ade)
+- 实现 Upload 函数编排完整 4 步流程：imageSign -> download -> uploadToOSS -> addImgInAsset
+
+### Task 6: asset upload-image 子命令
+- Status: complete (be3dc3a)
+- 创建 cmd/upload.go，注册 upload-image 子命令到 asset 命令
+
+### Task 7: 更新 course workflow
+- Status: complete (c1d49ce)
+- course.yaml 三个工作流添加 upload-avatar 步骤
+- allowed-routes 添加 asset
+- yaml_validate_test.go 添加手动注册命令白名单
+
+### Task 8: 全量测试与编译验证
+- Status: complete
+- 全部 18 个包测试通过，无回归
+- go build ./... 编译通过
+- go run ./cmd/ckjr-cli asset upload-image --help 命令注册验证通过
+
+## 2026-04-02 环境配置默认 base_url 实现
+
+### Phase 1: config 包新增 DefaultBaseURL 和 ResolveBaseURL
+- Status: complete (57c49d4)
+- config.go: 新增 envBaseURLs map (development/production)、environment 变量、SetEnvironment/DefaultBaseURL/ResolveBaseURL
+- config_test.go: 新增 5 个测试 (DefaultBaseURL_Development/Production/UnknownFallback, ResolveBaseURL_WithBaseURL/EmptyBaseURL)
+- 全量 config 包 9 个测试通过
+
+### Phase 2: cmd/root.go 接入 ResolveBaseURL
+- Status: complete (c6eb88b)
+- cmd.SetEnvironment 转发给 internalconfig.SetEnvironment
+- createClient 改用 cfg.ResolveBaseURL() 替代 cfg.BaseURL
+- 全量 18 个包测试通过，编译通过

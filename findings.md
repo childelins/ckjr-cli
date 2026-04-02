@@ -27,3 +27,11 @@ Go 的 init() 在 TestMain 之前执行。如果 init() 依赖需要通过 TestM
 ## filterByFields get-then-set 模式对数组的局限
 
 当 `getNestedValue` 穿透数组后返回的是扁平化的值列表（如 `[1, 2]`），再用 `setNestedValue` 设置到目标 map 时会丢失数组结构 -- 值被放入嵌套 map 而非保持在数组元素中。解决方案是将 `filterByFields` 重构为 `applyFieldPath` 递归构建模式，在遍历源结构时同步构建目标结构，遇到数组时对每个元素分别构建对应的目标 map。重构后不存在的嵌套路径需要额外处理：递归到空 sub map 后检查 `len(sub) > 0` 再写入 dst，避免产生空的中间 map 结构。
+
+## mime.ExtensionsByType 扩展名优先级
+
+Go 标准库 `mime.ExtensionsByType("image/jpeg")` 返回 `[.jpe .jpeg .jpg]`，第一个扩展名不是常见的 `.jpg`。在 `extFromContentType` 中需要优先查找 `.jpg`，然后回退到其他常见扩展名，最后才使用返回列表中的第一个。
+
+## Workflow YAML 验证与手动注册命令
+
+项目 `cmd/ckjr-cli/yaml_validate_test.go` 中的 `TestWorkflowCommandReferences` 会交叉验证 workflow 步骤中引用的命令是否在路由 YAML 配置中存在。对于通过代码手动注册的子命令（如 `asset upload-image`），需要在验证逻辑中维护一个白名单 `manualCommands` 来跳过验证，否则测试会误报错误。

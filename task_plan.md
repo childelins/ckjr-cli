@@ -1,6 +1,80 @@
 # 任务计划
 
-当前无活跃任务。
+当前活跃任务: 无（环境配置默认 base_url 实现已完成）
+
+---
+
+# OSS 图片上传实现 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-04-02-oss-image-upload.md
+
+## 概述
+
+为 ckjr-cli 新增 OSS 图片转存能力，将外部图片 URL 转存到系统素材库。
+
+---
+
+## Task 1: 数据结构与 IsExternalURL
+
+- **Source**: Plan -> Phase 1 / Task 1
+- **Status**: complete (029ddb2)
+- **Description**: 创建 internal/ossupload 包，定义 ImageSignResponse/AssetImage 数据结构，实现 IsExternalURL 辅助函数
+
+---
+
+## Task 2: 下载外部图片辅助函数
+
+- **Source**: Plan -> Phase 1 / Task 2
+- **Status**: complete (f80864b)
+- **Description**: 实现 downloadImage 函数，支持 Content-Type 校验、大小限制
+
+---
+
+## Task 3: 文件名与扩展名解析辅助函数
+
+- **Source**: Plan -> Phase 1 / Task 3
+- **Status**: complete (fa8deb8)
+- **Description**: 实现 parseFileName/isKnownImageExt/extFromContentType 辅助函数
+
+---
+
+## Task 4: OSS 直传函数
+
+- **Source**: Plan -> Phase 1 / Task 4
+- **Status**: complete (5a54148)
+- **Description**: 实现 uploadToOSS multipart/form-data 直传函数
+
+---
+
+## Task 5: Upload 总入口函数
+
+- **Source**: Plan -> Phase 1 / Task 5
+- **Status**: complete (1e99ade)
+- **Description**: 实现 Upload 函数，编排 imageSign -> download -> uploadToOSS -> addImgInAsset 完整流程
+
+---
+
+## Task 6: asset upload-image 子命令
+
+- **Source**: Plan -> Phase 2 / Task 6
+- **Status**: complete (be3dc3a)
+- **Description**: 创建 cmd/upload.go，注册 asset upload-image 子命令到 rootCmd
+
+---
+
+## Task 7: 更新 course workflow
+
+- **Source**: Plan -> Phase 3 / Task 7
+- **Status**: complete (c1d49ce)
+- **Description**: 在 course.yaml 的三个工作流中添加 upload-avatar 步骤
+
+---
+
+## Task 8: 全量测试与编译验证
+
+- **Source**: Plan -> Phase 4 / Task 8
+- **Status**: complete
+- **Description**: 运行全量测试、编译验证、命令注册验证
 
 ---
 
@@ -44,4 +118,39 @@
 - [已完成] Response Filter 自动数组穿透 (Phase 1-7, 2026-04-01)
 - [已完成] Response Field Descriptions (Phase 1-4, 2026-04-01)
 - [已完成] date 类型支持 (Phase 1-3, 2026-04-01)
+- [已完成] OSS 图片上传实现 (Task 1-8, 2026-04-02)
+- [已完成] 环境配置默认 base_url 实现 (Phase 1-2, 2026-04-02)
 - 完整历史详见 docs/superpowers/archive/
+
+---
+
+# 环境配置默认 base_url 实现 - 任务计划
+
+> Source plan: docs/superpowers/plans/2026-04-02-environment-config.md
+
+## 概述
+
+根据编译时 Environment 变量自动选择对应环境的默认 base_url，用户无需手动输入。config 包新增 envBaseURLs map 和 ResolveBaseURL() 方法。
+
+---
+
+## Phase 1: config 包新增 DefaultBaseURL 和 ResolveBaseURL
+
+- **Source**: Plan -> Task 1
+- **Status**: complete (57c49d4)
+- **Description**: 在 config 包新增 envBaseURLs map、SetEnvironment、DefaultBaseURL、ResolveBaseURL 方法，TDD 实现
+
+---
+
+## Phase 2: cmd/root.go 接入 ResolveBaseURL
+
+- **Source**: Plan -> Task 2
+- **Status**: complete (c6eb88b)
+- **Description**: cmd.SetEnvironment 转发给 config 包，createClient 使用 ResolveBaseURL
+
+---
+
+## 遇到的错误
+
+| 错误 | 尝试次数 | 解决方案 |
+|------|---------|---------|
