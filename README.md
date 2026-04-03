@@ -7,7 +7,7 @@
 ### 快捷安装（OpenClaw 等平台）
 
 ```
-帮我安装技能：https://github.com/childelins/ckjr-cli/blob/master/install.sh
+帮我安装：https://github.com/childelins/ckjr-cli/blob/master/install.sh
 ```
 
 ### 命令行安装
