@@ -258,16 +258,28 @@ func TestParse_AgentWorkflowFile(t *testing.T) {
 	if !ok {
 		t.Fatal("缺少 create-agent workflow")
 	}
-	if len(wf.Steps) != 3 {
-		t.Errorf("Steps 长度 = %d, want 3", len(wf.Steps))
+	if len(wf.Steps) != 4 {
+		t.Errorf("Steps 长度 = %d, want 4", len(wf.Steps))
 	}
-	if len(wf.Inputs) != 5 {
-		t.Errorf("Inputs 长度 = %d, want 5", len(wf.Inputs))
+	if len(wf.Inputs) != 8 {
+		t.Errorf("Inputs 长度 = %d, want 8", len(wf.Inputs))
 	}
 	if len(wf.AllowedRoutes) != 2 {
 		t.Errorf("AllowedRoutes 长度 = %d, want 2", len(wf.AllowedRoutes))
 	}
 	if wf.AllowedRoutes[0] != "agent" || wf.AllowedRoutes[1] != "common" {
 		t.Errorf("AllowedRoutes = %v, want [agent, common]", wf.AllowedRoutes)
+	}
+
+	// 验证 name 和 avatar 有 hint 引导 AI 收集
+	inputMap := make(map[string]Input)
+	for _, inp := range wf.Inputs {
+		inputMap[inp.Name] = inp
+	}
+	if inputMap["name"].Hint == "" {
+		t.Error("name input 缺少 hint，AI 可能跳过收集此字段")
+	}
+	if inputMap["avatar"].Hint == "" {
+		t.Error("avatar input 缺少 hint，AI 可能跳过收集此字段")
 	}
 }

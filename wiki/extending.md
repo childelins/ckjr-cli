@@ -98,6 +98,7 @@ routes:
 | `minLength` | number | 否 | 最小长度（适用于 type: string） |
 | `maxLength` | number | 否 | 最大长度（适用于 type: string） |
 | `pattern` | string | 否 | 正则表达式（适用于 type: string） |
+| `autoUpload` | string | 否 | 自动转存标记。`image` 表示外部图片 URL 在 API 请求前自动转存到素材库 |
 
 约束与 type 不匹配时会被静默忽略（如对 string 设置 min），方便后续调整 type 时保留约束。
 
@@ -117,6 +118,8 @@ routes:
             avatar:
                 description: 头像URL
                 required: true
+                type: string
+                autoUpload: image
             botType:
                 description: 智能体类型, 99-自营智能体 100-Coze智能体
                 required: false

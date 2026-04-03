@@ -9,6 +9,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"path"
 	"strconv"
@@ -22,14 +23,13 @@ const maxImageSize = 10 * 1024 * 1024 // 10MB
 
 // ImageSignResponse imageSign 接口响应
 type ImageSignResponse struct {
-	Key                 string `json:"key"`
-	Policy              string `json:"policy"`
-	OSSAccessKeyID      string `json:"OSSAccessKeyId"`
-	Signature           string `json:"signature"`
-	Callback            string `json:"callback"`
-	SuccessActionStatus string `json:"success_action_status"`
-	Origin              int    `json:"origin"`
-	Host                string `json:"host"`
+	AccessID  string `json:"accessid"`
+	Policy    string `json:"policy"`
+	Signature string `json:"signature"`
+	Callback  string `json:"callback"`
+	Dir       string `json:"dir"`
+	Host      string `json:"host"`
+	Origin    int    `json:"origin"`
 }
 
 // AssetImage 素材库图片信息
@@ -152,16 +152,16 @@ func extFromContentType(ct string) string {
 }
 
 // uploadToOSS 直传图片到阿里云 OSS（multipart/form-data）
-func uploadToOSS(ctx context.Context, signResp *ImageSignResponse, imageBytes []byte, fileName, suffix string) error {
+func uploadToOSS(ctx context.Context, signResp *ImageSignResponse, imageBytes []byte, key, fileName, suffix, contentType string) error {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
 	// 按顺序写入签名字段
-	fields := []struct{ key, value string }{
-		{"key", signResp.Key},
+	fields := []struct{ k, v string }{
+		{"key", key},
 		{"policy", signResp.Policy},
-		{"OSSAccessKeyId", signResp.OSSAccessKeyID},
-		{"success_action_status", signResp.SuccessActionStatus},
+		{"OSSAccessKeyId", signResp.AccessID},
+		{"success_action_status", "200"},
 		{"callback", signResp.Callback},
 		{"signature", signResp.Signature},
 		{"origin", strconv.Itoa(signResp.Origin)},
@@ -169,12 +169,15 @@ func uploadToOSS(ctx context.Context, signResp *ImageSignResponse, imageBytes []
 		{"x:realname", fileName},
 	}
 	for _, f := range fields {
-		if err := writer.WriteField(f.key, f.value); err != nil {
-			return fmt.Errorf("写入 OSS 表单字段 %s 失败: %w", f.key, err)
+		if err := writer.WriteField(f.k, f.v); err != nil {
+			return fmt.Errorf("写入 OSS 表单字段 %s 失败: %w", f.k, err)
 		}
 	}
 
-	part, err := writer.CreateFormFile("file", fileName+suffix)
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, fileName+suffix))
+	partHeader.Set("Content-Type", contentType)
+	part, err := writer.CreatePart(partHeader)
 	if err != nil {
 		return fmt.Errorf("创建 OSS 文件表单字段失败: %w", err)
 	}
@@ -191,7 +194,7 @@ func uploadToOSS(ctx context.Context, signResp *ImageSignResponse, imageBytes []
 
 	slog.InfoContext(ctx, "oss_upload_request",
 		"url", signResp.Host,
-		"key", signResp.Key,
+		"key", key,
 		"size_bytes", len(imageBytes),
 	)
 
@@ -231,12 +234,13 @@ func Upload(ctx context.Context, apiClient *api.Client, imageURL string) (*Asset
 	fileSizeMB := float64(len(imgBytes)) / 1024 / 1024
 
 	// Step 3: 直传 OSS
-	if err := uploadToOSS(ctx, &signResp, imgBytes, fileName, suffix); err != nil {
+	key := signResp.Dir + fileName + suffix
+	if err := uploadToOSS(ctx, &signResp, imgBytes, key, fileName, suffix, contentType); err != nil {
 		return nil, err
 	}
 
 	// Step 4: 保存到素材库
-	ossURL := signResp.Host + "/" + signResp.Key
+	ossURL := signResp.Host + "/" + key
 	payload := map[string]interface{}{
 		"data": []map[string]interface{}{
 			{

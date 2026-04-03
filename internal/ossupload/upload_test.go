@@ -146,22 +146,22 @@ func TestUploadToOSS_Success(t *testing.T) {
 	defer ossServer.Close()
 
 	signResp := &ImageSignResponse{
-		Key:                 "lj7l/resource/imgs/test/upload.png",
-		Host:                ossServer.URL,
-		Policy:              "test-policy",
-		OSSAccessKeyID:      "test-key-id",
-		Signature:           "test-sig",
-		Callback:            "test-cb",
-		SuccessActionStatus: "200",
-		Origin:              0,
+		Dir:       "lj7l/resource/imgs/test/",
+		Host:      ossServer.URL,
+		Policy:    "test-policy",
+		AccessID:  "test-key-id",
+		Signature: "test-sig",
+		Callback:  "test-cb",
+		Origin:    0,
 	}
 
-	err := uploadToOSS(context.Background(), signResp, []byte("fake image data"), "avatar", ".png")
+	key := signResp.Dir + "avatar" + ".png"
+	err := uploadToOSS(context.Background(), signResp, []byte("fake image data"), key, "avatar", ".png", "image/png")
 	if err != nil {
 		t.Fatalf("uploadToOSS() error = %v", err)
 	}
-	if receivedKey != "lj7l/resource/imgs/test/upload.png" {
-		t.Errorf("key = %q, want %q", receivedKey, "lj7l/resource/imgs/test/upload.png")
+	if receivedKey != "lj7l/resource/imgs/test/avatar.png" {
+		t.Errorf("key = %q, want %q", receivedKey, "lj7l/resource/imgs/test/avatar.png")
 	}
 	if receivedName != "avatar" {
 		t.Errorf("name = %q, want %q", receivedName, "avatar")
@@ -176,17 +176,16 @@ func TestUploadToOSS_ServerError(t *testing.T) {
 	defer ossServer.Close()
 
 	signResp := &ImageSignResponse{
-		Key:                 "test-key",
-		Host:                ossServer.URL,
-		Policy:              "test-policy",
-		OSSAccessKeyID:      "test-key-id",
-		Signature:           "test-sig",
-		Callback:            "test-cb",
-		SuccessActionStatus: "200",
-		Origin:              0,
+		Dir:       "test/",
+		Host:      ossServer.URL,
+		Policy:    "test-policy",
+		AccessID:  "test-key-id",
+		Signature: "test-sig",
+		Callback:  "test-cb",
+		Origin:    0,
 	}
 
-	err := uploadToOSS(context.Background(), signResp, []byte("data"), "test", ".png")
+	err := uploadToOSS(context.Background(), signResp, []byte("data"), "test/test.png", "test", ".png", "image/png")
 	if err == nil {
 		t.Fatal("uploadToOSS() should return error for 403")
 	}
@@ -218,14 +217,13 @@ func TestUpload_Success(t *testing.T) {
 		case r.URL.Path == "/admin/assets/imageSign":
 			json.NewEncoder(w).Encode(api.Response{
 				Data: map[string]interface{}{
-					"key":                   "lj7l/resource/imgs/eeb49984/test.png",
-					"policy":                "test-policy-base64",
-					"OSSAccessKeyId":        "LTAIEooZEnvlRbrb",
-					"signature":             "test-sig",
-					"callback":              "test-callback-base64",
-					"success_action_status": "200",
-					"origin":                0,
-					"host":                  ossServer.URL,
+					"accessid":  "LTAIEooZEnvlRbrb",
+					"policy":    "test-policy-base64",
+					"signature": "test-sig",
+					"callback":  "test-callback-base64",
+					"dir":       "lj7l/resource/imgs/eeb49984/",
+					"origin":    0,
+					"host":      ossServer.URL,
 				},
 				Message:    "ok",
 				StatusCode: 200,
@@ -280,14 +278,13 @@ func TestUpload_DownloadFails(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(api.Response{
 			Data: map[string]interface{}{
-				"key":                   "test-key",
-				"policy":                "test-policy",
-				"OSSAccessKeyId":        "test-id",
-				"signature":             "test-sig",
-				"callback":              "test-cb",
-				"success_action_status": "200",
-				"origin":                0,
-				"host":                  "https://oss.example.com",
+				"accessid":  "test-id",
+				"policy":    "test-policy",
+				"signature": "test-sig",
+				"callback":  "test-cb",
+				"dir":       "test/imgs/",
+				"origin":    0,
+				"host":      "https://oss.example.com",
 			},
 			Message:    "ok",
 			StatusCode: 200,

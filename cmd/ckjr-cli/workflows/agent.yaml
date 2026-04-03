@@ -15,13 +15,14 @@ workflows:
       - name: name
         description: 智能体名称
         required: true
+        hint: 必须询问用户，根据用户描述建议一个智能体名称，并让用户确认或修改
       - name: desc
         description: 智能体描述/用途
         required: true
       - name: avatar
         description: 头像URL（外部图片将自动转存到素材库）
         required: false
-        hint: 如果用户未提供，询问用户或使用用户提供的素材链接
+        hint: 必须询问用户提供头像图片或素材链接，如未提供可使用默认图
       - name: instructions
         description: 智能体提示词/角色设定
         required: true
@@ -30,6 +31,18 @@ workflows:
         description: 开场白文案
         required: false
         hint: 根据智能体角色生成一条友好的开场白
+      - name: promptType
+        description: 提示词模板类型, 1-交付型 3-角色类
+        required: true
+        hint: 必须询问用户选择智能体类型。交付型(1)适合问答/任务类，角色类(3)适合虚拟角色/客服，不可自行决定
+      - name: permissionType
+        description: 用户使用智能体的计费方式, 0-免费 1-按次数(交付型) 2-按分钟(角色类) 3-加密
+        required: true
+        hint: 这是用户对话的计费方式，不是智能体定价。免费设 0；交付型智能体选 1-按次数；角色类智能体选 2-按分钟；加密需询问用户设置密码
+      - name: price
+        description: 智能体整体售价(元)，免费时填 0
+        required: true
+        hint: 这是智能体的整体售价（元），不是按次/按分钟的单价。免费设为 0，付费请询问用户定价
     steps:
       - id: create
         description: 创建智能体基本信息
@@ -38,6 +51,7 @@ workflows:
           name: "{{inputs.name}}"
           desc: "{{inputs.desc}}"
           avatar: "{{inputs.avatar}}"
+          promptType: "{{inputs.promptType}}"
         output:
           aikbId: "response.aikbId"
       - id: configure
@@ -50,6 +64,14 @@ workflows:
           avatar: "{{inputs.avatar}}"
           instructions: "{{inputs.instructions}}"
           greeting: "{{inputs.greeting}}"
+      - id: set-app-info
+        description: 设置售卖信息并上架
+        command: agent setAppInfo
+        params:
+          aikbId: "{{steps.create.aikbId}}"
+          permissionType: "{{inputs.permissionType}}"
+          price: "{{inputs.price}}"
+          status: 1
       - id: get-link
         description: 获取公众号端访问链接和二维码
         command: common link
@@ -63,5 +85,6 @@ workflows:
       智能体创建完成：
       - 名称：{{inputs.name}}
       - ID：{{steps.create.aikbId}}
+      - 售卖状态：已上架
       - 访问链接：{{steps.get-link.url}}
       - 二维码：{{steps.get-link.qrcodeImg}}

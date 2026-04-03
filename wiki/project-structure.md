@@ -36,9 +36,12 @@ cmd/
     embed.go           # go:embed all:routes all:workflows，嵌入 YAML 配置
     routes/
       agent.yaml       # 智能体模块（create/delete/get/list/update）
+      asset.yaml       # 素材库模块（upload-image）
       common.yaml      # 公共接口模块（link）
+      course.yaml      # 课程模块（create/update/get/list）
     workflows/
       agent.yaml       # 智能体工作流（create-agent）
+      course.yaml      # 课程工作流（create-video/audio/article-course）
 ```
 
 `cmd/root.go` 的核心逻辑：
@@ -77,6 +80,7 @@ internal/
   output/      # JSON 输出格式化
   curlparse/   # curl 命令解析器
   yamlgen/     # YAML 路由配置生成器
+  ossupload/   # 外部图片转存到阿里云 OSS 素材库
   workflow/    # Workflow YAML 解析和描述生成
 ```
 
@@ -92,6 +96,7 @@ internal/
 | `output/` | JSON 输出，支持 pretty 格式化 |
 | `curlparse/` | 解析 curl 命令提取 method/path/body |
 | `yamlgen/` | 生成 YAML 路由配置，支持新建和追加到已有文件 |
+| `ossupload/` | 外部图片转存到阿里云 OSS 素材库（IsExternalURL 检测 + Upload 转存） |
 | `workflow/` | 解析 Workflow YAML，生成 AI 可读的文本描述 |
 
 ## 数据流
@@ -110,10 +115,12 @@ cmdgen.BuildCommand() -> cobra.Command
     v  (用户执行 CLI 命令)
 cmdgen.buildSubCommand()
     |-- 解析 JSON 参数
-    |-- applyDefaults()      应用默认值
-    |-- validateRequired()   校验必填字段
-    |-- api.Client.DoCtx()   发送 HTTP 请求（含 requestId）
-    |-- output.Print()       输出 JSON 结果
+    |-- applyDefaults()        应用默认值
+    |-- ValidateAll()          校验必填字段、类型、约束
+    |-- processAutoUpload()    自动转存 autoUpload=image 的外部图片
+    |-- api.Client.DoCtx()     发送 HTTP 请求（含 requestId）
+    |-- FilterResponse()       响应字段过滤
+    |-- output.Print()         输出 JSON 结果
 ```
 
 关键点：YAML 文件在编译时通过 `go:embed` 嵌入二进制文件，运行时无需文件系统依赖。

@@ -6,20 +6,14 @@ routes:
         path: /admin/aiCreationCenter/createApp
         description: 创建智能体
         template:
-            name:
-                description: 智能体名称
-                required: true
-                type: string
-                minLength: 1
-                maxLength: 20
             avatar:
                 description: 头像URL
                 required: true
                 type: string
-                autoUpload: image
+                example: https://ck-bkt-knowledge-payment.oss-cn-hangzhou.aliyuncs.com/y99rjd/resource/imgs/120b2b85/admin-fe_y99rjd_material_BAwRCWsQW2tMd6nHichk.png
                 minLength: 1
                 maxLength: 255
-                example: https://ck-bkt-knowledge-payment.oss-cn-hangzhou.aliyuncs.com/y99rjd/resource/imgs/120b2b85/admin-fe_y99rjd_material_BAwRCWsQW2tMd6nHichk.png
+                autoUpload: image
             botType:
                 description: 智能体类型, 99-自营智能体
                 required: false
@@ -32,10 +26,16 @@ routes:
                 minLength: 1
                 maxLength: 200
             isSaleOnly:
-                description: 是否支持售卖, 1-交付型 0-客服型
+                description: 是否支持售卖, 1-交付型/角色类 0-客服型
                 required: false
                 default: 1
                 type: int
+            name:
+                description: 智能体名称
+                required: true
+                type: string
+                minLength: 1
+                maxLength: 20
             promptType:
                 description: 提示词模板类型, 1-交付型 3-角色类/客服型
                 required: false
@@ -81,7 +81,6 @@ routes:
               description: 价格
             - path: status
               description: 状态, 1-正常 3-下架
-
     list:
         method: POST
         path: /admin/aiCreationCenter/listApp
@@ -112,6 +111,40 @@ routes:
                 required: false
                 default: 0
                 type: int
+    setAppInfo:
+        method: POST
+        path: /admin/aiCreationCenter/setAppInfo
+        description: 更新智能体售卖设置
+        template:
+            aikbId:
+                description: 智能体ID
+                required: true
+                type: int
+            payPassword:
+                description: 加密密码, 当 permissionType = 3 时需要设置
+                required: false
+            permissionType:
+                description: |
+                    用户使用智能体的计费方式
+                        0-免费
+                        1-按次数, 交付型智能体使用
+                        2-按分钟, 角色类智能体使用
+                        3-加密
+                required: true
+                type: int
+            price:
+                description: |
+                    智能体整体售价(元), 不是按次/按分钟的单价
+                      - 免费: 价格为 0, permissionType = 0
+                      - 付费: 价格大于 0, permissionType in (1, 2)
+                      - 加密: 价格为 0, permissionType = 3
+                required: true
+                type: float
+            status:
+                description: 上下架状态, 1-立即上架, 3-下架
+                required: false
+                type: int
+                default: 1
     update:
         method: POST
         path: /admin/aiCreationCenter/modifyApp
@@ -125,9 +158,9 @@ routes:
                 description: 智能体头像URL
                 required: true
                 type: string
-                autoUpload: image
                 minLength: 1
                 maxLength: 255
+                autoUpload: image
             desc:
                 description: 智能体描述
                 required: true
@@ -138,6 +171,7 @@ routes:
                 description: 开场白文案
                 required: false
                 type: string
+                minLength: 1
                 maxLength: 200
             instructions:
                 description: 智能体提示词
