@@ -87,7 +87,7 @@ func TestDefaultBaseURL_Development(t *testing.T) {
 func TestDefaultBaseURL_Production(t *testing.T) {
 	SetEnvironment("production")
 	got := DefaultBaseURL()
-	want := "https://kpapi0.kw.ckjr.cn/api"
+	want := "http://kpapiop.ckjr001.com/api"
 	if got != want {
 		t.Errorf("DefaultBaseURL() = %s, want %s", got, want)
 	}
@@ -114,7 +114,7 @@ func TestResolveBaseURL_EmptyBaseURL(t *testing.T) {
 	SetEnvironment("production")
 	cfg := &Config{BaseURL: ""}
 	got := cfg.ResolveBaseURL()
-	want := "https://kpapi0.kw.ckjr.cn/api"
+	want := "http://kpapiop.ckjr001.com/api"
 	if got != want {
 		t.Errorf("ResolveBaseURL() = %s, want %s", got, want)
 	}

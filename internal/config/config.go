@@ -25,7 +25,7 @@ func init() {
 // envBaseURLs 各环境对应的默认 base_url
 var envBaseURLs = map[string]string{
 	"development": "https://kpapi-cs.ckjr001.com/api",
-	"production":  "https://kpapi0.kw.ckjr.cn/api",
+	"production":  "http://kpapiop.ckjr001.com/api",
 }
 
 // environment 由 main 包通过 SetEnvironment 注入
