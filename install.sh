@@ -6,6 +6,14 @@ REPO="childelins/ckjr-cli"
 BINARY_NAME="ckjr-cli"
 INSTALL_DIR="$HOME/.local/bin"
 
+# 支持的 AI 编码平台：平台名:检测目录:安装子目录
+PLATFORMS=(
+    "claude:.claude:skills"
+    "gemini:.gemini:skills"
+    "openclaw:.openclaw:skills"
+    "codex:.codex:skills"
+)
+
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -136,36 +144,66 @@ install_via_release() {
     info "Installed to $INSTALL_DIR/$dest_name"
 }
 
-# 安装 Claude Code Skills
+# 安装 AI 编码平台 Skills（自动检测已安装平台）
 install_skills() {
-    local skills_dir="$HOME/.claude/skills"
     local tarball_url="https://api.github.com/repos/${REPO}/tarball/master"
-
-    info "Installing Claude Code skills..."
-
-    mkdir -p "$skills_dir"
-
     local tmp_dir=$(mktemp -d)
 
-    # 下载仓库归档
+    # 下载仓库归档（单次下载）
+    info "Downloading skills from repository..."
     if command -v curl &> /dev/null; then
         curl -fsSL ${GITHUB_TOKEN:+-H "Authorization: token $GITHUB_TOKEN"} -o "$tmp_dir/repo.tar.gz" "$tarball_url"
     else
         wget -q ${GITHUB_TOKEN:+--header="Authorization: token $GITHUB_TOKEN"} -O "$tmp_dir/repo.tar.gz" "$tarball_url"
     fi
 
-    # 解压并提取 skills 目录
+    # 解压（单次解压）
     tar -xzf "$tmp_dir/repo.tar.gz" -C "$tmp_dir"
     local repo_dir=$(ls -d "$tmp_dir"/childelins-ckjr-cli-* 2>/dev/null | head -n1)
 
-    if [ -d "$repo_dir/skills" ]; then
-        cp -r "$repo_dir/skills"/* "$skills_dir/"
-        info "Skills installed to $skills_dir/"
-    else
+    if [ ! -d "$repo_dir/skills" ]; then
         warn "No skills found in repository"
+        rm -rf "$tmp_dir"
+        return
     fi
 
+    # 遍历平台注册表，检测并安装
+    local installed=0
+    for platform_entry in "${PLATFORMS[@]}"; do
+        IFS=':' read -r platform detect_dir install_subdir <<< "$platform_entry"
+
+        # 检查用户系统上是否安装了该平台
+        if [ ! -d "$HOME/$detect_dir" ]; then
+            continue
+        fi
+
+        # 确定源目录：优先平台特定覆盖，回退共享源
+        local src_dir="$repo_dir/skills/$platform/ckjr-cli"
+        if [ ! -d "$src_dir" ]; then
+            src_dir="$repo_dir/skills/ckjr-cli"
+        fi
+
+        if [ ! -d "$src_dir" ]; then
+            warn "Platform $platform detected but no skills available"
+            continue
+        fi
+
+        # 安装 skills
+        local dest_dir="$HOME/$detect_dir/$install_subdir"
+        mkdir -p "$dest_dir"
+        cp -r "$src_dir" "$dest_dir/"
+        info "Skills installed for $platform -> $dest_dir/"
+        installed=$((installed + 1))
+    done
+
     rm -rf "$tmp_dir"
+
+    if [ "$installed" -eq 0 ]; then
+        warn "No AI coding platforms detected. Skills installation skipped."
+        warn "Install Claude Code, Gemini, OpenClaw, or Codex to enable skills."
+    else
+        info "Skills installed for $installed platform(s)"
+    fi
 }
 
 # 主函数
